@@ -1,0 +1,37 @@
+!*-----------------------------------------------------------------------------------------------------------------------------------
+!*    A series of test images from the Culham LOop Counting Kit (CLOCK), a library for automated feature detection in irradiated transmission electron micrographs
+!*    Copyright (C) 2024  UKAEA
+
+!*    This program is free software: you can redistribute it and/or modify
+!*    it under the terms of the GNU General Public License as published by
+!*    the Free Software Foundation, either version 3 of the License, or
+!*    (at your option) any later version.
+
+!*    This program is distributed in the hope that it will be useful,
+!*    but WITHOUT ANY WARRANTY; without even the implied warranty of
+!*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+!*    GNU General Public License for more details.
+
+!*    You should have received a copy of the GNU General Public License
+!*    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+!*-----------------------------------------------------------------------------------------------------------------------------------
+
+!*  Micrographs:
+        fe6cr_n_irrad_1.8dpa_fib_dam_BF.png                     |   Jack Haley (UKAEA)
+        fe6cr_n_irrad_1.8dpa_fib_dam_DF.png                     |   Jack Haley (UKAEA)
+        W_30K_0.2dpa_DF.png                                     |   Jack Haley (UKAEA)
+                                                                
+!*  Public domian test images                                   
+        test_cameraman.png                                      |   Lav Varshney (CC0)
+        test_cat.png                                            |   Wikimedia Commons (CCO)
+        test_fracture.png                                       |   Kass Juanebe (CC BY-SA 4.0)
+                                                                
+!*  Generated Test images:  
+        test_grey.png                                           |   Daniel Mason & James Heath (UKAEA)
+        test_line.png                                           |   Daniel Mason & James Heath (UKAEA)
+        test_squares.png                                        |   Daniel Mason & James Heath (UKAEA)
+        filtertest.png                                          |   Daniel Mason & James Heath (UKAEA)
+        flattest.png                                            |   Daniel Mason & James Heath (UKAEA)
+        test_synth_ms.png                                       |   Daniel Mason & James Heath (UKAEA)
+
+
