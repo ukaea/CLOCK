@@ -67,6 +67,7 @@ Some users have reported tests failing due to windows end of line character bein
 - $'\r': command not found
 - ")syntax error: invalid arithmetic operator (error token is "
 - syntax error near unexpected token `fi'
+
 To fix, please run dos2unix test/\*/*.sh from the /CLOCK directory.
 
 ## Installation (optional)
