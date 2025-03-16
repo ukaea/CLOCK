@@ -64,10 +64,10 @@ where NameOfTest is is defined by the NAME property in add_test called in the /t
 Note: for vscode users there is launch.json in /.vscode that contains launch configurations if you want to use vscode's debugger.
 
 Some users have reported tests failing due to windows end of line character being inserted into shell scripts. Error messages may look like:
-        $'\r': command not found
-        ")syntax error: invalid arithmetic operator (error token is "
-        syntax error near unexpected token `fi'
-To fix, please run dos2unix test/*/*.sh from the /CLOCK directory.
+- $'\r': command not found
+- ")syntax error: invalid arithmetic operator (error token is "
+- syntax error near unexpected token `fi'
+To fix, please run dos2unix test/\*/*.sh from the /CLOCK directory.
 
 ## Installation (optional)
 
