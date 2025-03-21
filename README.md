@@ -78,6 +78,8 @@ If desired CLOCK can be installed from the project root directory with:
 
 ## Usage
 
+CLOCK is designed to run on 16-bit greyscale pngs. 8-bit greyscale pngs will also work but the former is recommended. If you are working with 32-bit images (formats such as .dm3 or .dm4), these can be converted with imageJ. Images must be free of annotations. If you have a colour micrograpgh please insure you convert it to greyscale using equal weights for the red/gren/blue channels, e.g '(r+g+b)/3'.
+
 NB:    
 - Run programs from Clock directory.
 - Run programs with -h, -help flags or without arguments for help.
