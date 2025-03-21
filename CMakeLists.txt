@@ -28,6 +28,7 @@ project(CLOCK
      
 
 include(CMakePrintHelpers)
+include(CTest)
 cmake_print_variables(PROJECT_NAME)
 cmake_print_variables(CMAKE_INSTALL_PREFIX)
 cmake_print_variables(PROJECT_SOURCE_DIR)
@@ -50,14 +51,15 @@ if(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
         #Added regardless of build options
         "-I/usr/include"
         #For CMAKE_BUILD_TYPE=Release
-        "$<$<CONFIG:Release>:-O2;-march=native>"
+        "$<$<CONFIG:Release>:-O2;-march=native;-coverage>"
         #For general profiling (not gprof), prevents inlining, and adds debug info but still optimised
-        "$<$<CONFIG:Perf>:-Og;-g;-pg>"
+        "$<$<CONFIG:Perf>:-Og;-g;-pg;-coverage>"
+        "$<$<CONFIG:Debug>:-coverage>"
         )
     add_link_options( 
 
-         "$<$<CONFIG:Debug>:-fbacktrace;-fbounds-check;-ffpe-trap=invalid,zero,overflow,-g>"
-         "$<$<CONFIG:Perf>:-pg>"
+         "$<$<CONFIG:Debug>:-fbacktrace;-fbounds-check;-ffpe-trap=invalid,zero,overflow,-g;-coverage>"
+         "$<$<CONFIG:Perf>:-pg;-coverage>"
 
          )
 elseif(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")    
