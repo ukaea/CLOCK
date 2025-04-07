@@ -25,13 +25,13 @@ jobs:
             #build-type: coverage
           - os: ubuntu-latest
             build-type: coverage
-            compiler: gcc, ${{ matrix.gcc_version }}
+            compiler: gcc, gcc_version 11
           - os: ubuntu-latest
             build-type: coverage
-            compiler: gcc, ${{ matrix.gcc_version }}
+            compiler: gcc, gcc_version 12
           - os: ubuntu-latest
             build-type: coverage
-            compiler: gcc, ${{ matrix.gcc_version }}
+            compiler: gcc, gcc_version 13
 
 
     #env:
