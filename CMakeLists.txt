@@ -51,15 +51,15 @@ if(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
         #Added regardless of build options
         "-I/usr/include"
         #For CMAKE_BUILD_TYPE=Release
-        "$<$<CONFIG:Release>:-O2;-march=native;-coverage>"
+        "$<$<CONFIG:Release>:-O2;-march=native;>"
         #For general profiling (not gprof), prevents inlining, and adds debug info but still optimised
-        "$<$<CONFIG:Perf>:-Og;-g;-pg;-coverage>"
-        "$<$<CONFIG:Debug>:-coverage>"
+        "$<$<CONFIG:Perf>:-Og;-g;-pg;>"
+        "$<$<CONFIG:Coverage>:-coverage>"
         )
     add_link_options( 
-
-         "$<$<CONFIG:Debug>:-fbacktrace;-fbounds-check;-ffpe-trap=invalid,zero,overflow,-g;-coverage>"
-         "$<$<CONFIG:Perf>:-pg;-coverage>"
+         "$<$<CONFIG:Debug>:-fbacktrace;-fbounds-check;-ffpe-trap=invalid,zero,overflow,-g;>"
+         "$<$<CONFIG:Perf>:-pg;>"
+         "$<$<CONFIG:Coverage>:-coverage>"
 
          )
 elseif(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")    
