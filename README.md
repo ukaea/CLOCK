@@ -1,6 +1,6 @@
 # The Culham LOop Counting Kit (CLOCK)
 
- A code for analysing TEM micrographs, it is run via command line. This is a preview build preceding a methods paper. There will be some additions/changes before submission. If you use CLOCK before the updated methods paper come out, please cite:
+ A code for analysing TEM micrographs, it is run via command line. This is a preview build preceding a methods paper. There will be some additions/changes before submission. If you use CLOCK before the updated methods paper comes out, please cite:
  - For background subtraction and black spot detection: Mason et al., Acta Materialia, Volume 144, February 2018, Pages 905-917
  - For denoising with the maximum likelihood filter: D. R. Mason & A. London, (2020) Ultramicroscopy 211:112940
 
