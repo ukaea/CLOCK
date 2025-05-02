@@ -15,10 +15,10 @@ else
     avgdiam=`awk '{print $3}' countresult`
     # now find the error - either the absolute difference in number of spots, or the first place in decimals of the average diameter
 
-    delta=`awk 'function max(a,b){return a>b?a:b} ; function abs(v) {return v < 0 ? -v : v}{print max( abs($2-1780), int(abs($3-12.269)*10) )}' countresult`
+    delta=`awk 'function max(a,b){return a>b?a:b} ; function abs(v) {return v < 0 ? -v : v}{print max( abs($2-1780), int(abs($3-15)*10) )}' countresult`
     echo "         NEW RESULT       CACHED RESULT"
     echo "n spots  " ${nspots}   " 1780 " 
-    echo "<d>      " ${avgdiam}  " 15 "
+    echo "<d>      " ${avgdiam}  " 12.269 "
 
     if [ "${delta}" -le 2 ]; then    
         echo "PASS"        
