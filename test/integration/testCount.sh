@@ -18,7 +18,7 @@ else
     delta=`awk 'function max(a,b){return a>b?a:b} ; function abs(v) {return v < 0 ? -v : v}{print max( abs($2-1780), int(abs($3-12.269)*10) )}' countresult`
     echo "         NEW RESULT       CACHED RESULT"
     echo "n spots  " ${nspots}   " 1780 " 
-    echo "<d>      " ${avgdiam}  " 12.269 "
+    echo "<d>      " ${avgdiam}  " 15 "
 
     if [ "${delta}" -le 2 ]; then    
         echo "PASS"        
