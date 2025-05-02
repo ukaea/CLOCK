@@ -14,7 +14,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         build-type: [default]
-        gcc_version: [11,12,13]
+        gcc_version: [12,13] #removed 11 as githubs ubuntu-latest runner doesnt have it, has 14 though
 
         include:
           #- os: ubuntu-latest
@@ -23,9 +23,9 @@ jobs:
           #- os: ubuntu-latest
             #toolchain: {compiler: gcc, version: 10}
             #build-type: coverage
-          - os: ubuntu-latest
-            build-type: coverage
-            compiler: CC, gcc_version 11
+          # - os: ubuntu-latest
+          #   build-type: coverage
+          #   compiler: CC, gcc_version 11
           - os: ubuntu-latest
             build-type: coverage
             compiler: CC, gcc_version 12
@@ -72,6 +72,15 @@ jobs:
         -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
         -S ${{ github.workspace }}
+
+    - name: Install libpng
+      run: sudo apt-get install libpng-dev
+
+    - name: Install FFTW3
+      run: sudo apt-get install libfftw3-dev
+
+    - name: Install BLAS
+      run: sudo apt-get install libblas-dev      
 
     - name: Build
       # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
