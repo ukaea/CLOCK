@@ -16,7 +16,7 @@ jobs:
         build-type: [default]
         gcc_version: [12,13] #removed 11 as githubs ubuntu-latest runner doesnt have it, has 14 though
 
-        include:
+        #include:
           #- os: ubuntu-latest
             #toolchain: {compiler: gcc, version: 9}
             #build-type: coverage
@@ -26,12 +26,12 @@ jobs:
           # - os: ubuntu-latest
           #   build-type: coverage
           #   compiler: CC, gcc_version 11
-          - os: ubuntu-latest
-            build-type: coverage
-            compiler: CC, gcc_version 12
-          - os: ubuntu-latest
-            build-type: coverage
-            compiler: CC, gcc_version 13
+          # - os: ubuntu-latest
+          #   build-type: coverage
+          #   compiler: CC, gcc_version 12
+          # - os: ubuntu-latest
+          #   build-type: coverage
+          #   compiler: CC, gcc_version 13
             
 
 
