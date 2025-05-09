@@ -13,7 +13,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        build-type: [default]
+        build-type: [default,Coverage]
         gcc_version: [12,13] #removed 11 as githubs ubuntu-latest runner doesnt have it, has 14 though
 
         #include:
