@@ -1,4 +1,5 @@
 # The Culham LOop Counting Kit (CLOCK)
+[![Build](https://github.com/ukaea/CLOCK/workflows/CI/badge.svg)](https://github.com/ukaea/CLOCK/actions)
 
  A code for analysing TEM micrographs, it is run via command line. This is a preview build preceding a methods paper. There will be some additions/changes before submission.
 
