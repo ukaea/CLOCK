@@ -94,8 +94,9 @@ jobs:
       working-directory: ${{ steps.strings.outputs.build-output-dir }}
       if: ${{ matrix.build-type == 'Coverage' }}
       run: ctest -T Coverage
-    #- name: Upload coverage report
-      #if: ${{ matrix.build-type == 'coverage' }}
-      #uses: codecov/codecov-action@v2
-      #with:
-        #token: ${{ secrets.CODECOV_TOKEN }}
+
+    - name: Upload coverage report
+      if: ${{ matrix.build-type == 'Coverage' }}
+      uses: codecov/codecov-action@v5
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
