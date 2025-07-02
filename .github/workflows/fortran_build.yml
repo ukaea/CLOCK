@@ -1,0 +1,107 @@
+name: CI
+
+on:
+  push:
+    branches: 
+      - RSE_get_CI_working #[ $default-branch ]
+      - Dev
+      - main
+  pull_request:
+    branches: 
+      - RSE_get_CI_working #[ $default-branch ]
+      - Dev
+      - main
+jobs:
+  gcc-build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        build-type: [default,Coverage]
+        gcc_version: [12,13] #removed 11 as githubs ubuntu-latest runner doesnt have it, has 14 though
+
+        #include:
+          #- os: ubuntu-latest
+            #toolchain: {compiler: gcc, version: 9}
+            #build-type: coverage
+          #- os: ubuntu-latest
+            #toolchain: {compiler: gcc, version: 10}
+            #build-type: coverage
+          # - os: ubuntu-latest
+          #   build-type: coverage
+          #   compiler: CC, gcc_version 11
+          # - os: ubuntu-latest
+          #   build-type: coverage
+          #   compiler: CC, gcc_version 12
+          # - os: ubuntu-latest
+          #   build-type: coverage
+          #   compiler: CC, gcc_version 13
+            
+
+
+    #env:
+      #OMP_NUM_THREADS: 2,1
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    #- uses: actions/setup-python@v4
+      #with:
+        #python-version: '3.x'
+
+
+    - name: Set reusable strings
+      # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
+      id: strings
+      shell: bash
+      run: |
+        echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+
+    - name: Install libpng
+      run: sudo apt-get install libpng-dev
+
+    - name: Install FFTW3
+      run: sudo apt-get install libfftw3-dev
+
+    - name: Install BLAS
+      run: sudo apt-get install libblas-dev      
+
+    - name: Install LAPACK
+      run: sudo apt-get install liblapack-dev  
+
+    - name: Configure CMake
+      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
+      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+      env:
+        CC: gcc-${{ matrix.gcc_version }}
+        FC: gfortran-${{ matrix.gcc_version }}
+      run: >
+        cmake -B ${{ steps.strings.outputs.build-output-dir }}
+        -DCMAKE_BUILD_TYPE=${{ matrix.build-type }}
+        -S ${{ github.workspace }}
+
+
+    - name: Build
+      # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
+      #run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
+      run: cmake --build ${{ steps.strings.outputs.build-output-dir }}
+
+    - name: Test
+      working-directory: ${{ steps.strings.outputs.build-output-dir }}
+      # Execute tests defined by the CMake configuration. Note that --build-config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
+      # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
+      #run: ctest --build-config ${{ matrix.build_type }}
+      run: ctest
+
+    - name: get_coverage
+      working-directory: ${{ steps.strings.outputs.build-output-dir }}
+      if: ${{ matrix.build-type == 'Coverage' }}
+      run: ctest -T Coverage
+
+    - name: Upload coverage report
+      if: ${{ matrix.build-type == 'Coverage' }}
+      uses: codecov/codecov-action@v5
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
