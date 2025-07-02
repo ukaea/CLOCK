@@ -1,6 +1,6 @@
 # The Culham LOop Counting Kit (CLOCK)
 [![Build](https://github.com/ukaea/CLOCK/workflows/CI/badge.svg)](https://github.com/ukaea/CLOCK/actions)
-[![codecov](https://codecov.io/gh/ukaea/CLOCK/branch/RSE_get_CI_working/graph/badge.svg?token=NR07LOGXI4)](https://codecov.io/gh/ukaea/CLOCK)
+[![codecov](https://codecov.io/gh/ukaea/CLOCK/branch/Dev/graph/badge.svg?token=NR07LOGXI4)](https://codecov.io/gh/ukaea/CLOCK)
 
  A code for analysing TEM micrographs, it is run via command line. This is a preview build preceding a methods paper. There will be some additions/changes before submission. If you use CLOCK before the updated methods paper come out, please cite:
  - For background subtraction and black spot detection: Mason et al., Acta Materialia, Volume 144, February 2018, Pages 905-917
