@@ -2,10 +2,15 @@ name: CI
 
 on:
   push:
-    branches: [RSE_get_CI_working]#[ $default-branch ]
+    branches: 
+      - RSE_get_CI_working #[ $default-branch ]
+      - Dev
+      - main
   pull_request:
-    branches: [RSE_get_CI_working]#[ $default-branch ]
-
+    branches: 
+      - RSE_get_CI_working #[ $default-branch ]
+      - Dev
+      - main
 jobs:
   gcc-build:
     runs-on: ${{ matrix.os }}
