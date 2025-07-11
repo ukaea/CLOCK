@@ -66,6 +66,8 @@ module NBAX_StringTokenizers
    public              ::      parse                           !   converts string to number
    public              ::      adjustl                         !   removes delimiters from start of string
    public              ::      ftoa, utoa, itoa                  !   converts number to string
+   public              ::      convertUpperCase
+   public              ::      convertLowerCase
 
    integer, public, parameter            ::      STRINGTOKENIZER_MAX_STRING = 1024
    integer, public, parameter            ::      STRINGTOKENIZER_MAX_TOKENS = 8
@@ -954,6 +956,41 @@ contains
       end do
       return
    end subroutine iatoa1
+
+   pure function convertUpperCase(text_in) result(text_out)
+!---^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+!*      convert string to all upper case
+   character(len=*),intent(in)                         ::      text_in
+   character(len=len(text_in))                         ::      text_out
+   integer             ::      ii,ascii
+   integer,parameter   ::      ASCII_a = iachar("a")
+   integer,parameter   ::      ASCII_z = iachar("z")
+   integer,parameter   ::      ASCII_CASE_OFFSET = iachar("A") - iachar("a")
+   text_out = text_in
+   do ii = 1,len_trim(text_in)
+         ascii = iachar( text_in(ii:ii) )        !   convert character i to its ascii representation
+         if ( (ascii>=ASCII_a).and.(ascii<=ASCII_z) ) text_out(ii:ii) = achar( ascii + ASCII_CASE_OFFSET )
+   end do
+   return
+end function convertUpperCase
+
+
+pure function convertLowerCase(text_in) result(text_out)
+!---^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+!*      convert string to all lower case
+   character(len=*),intent(in)                         ::      text_in
+   character(len=len(text_in))                         ::      text_out
+   integer             ::      ii,ascii
+   integer,parameter   ::      ASCII_A = iachar("A")
+   integer,parameter   ::      ASCII_Z = iachar("Z")
+   integer,parameter   ::      ASCII_CASE_OFFSET = iachar("a") - iachar("A")
+   text_out = text_in
+   do ii = 1,len_trim(text_in)
+         ascii = iachar( text_in(ii:ii) )        !   convert character i to its ascii representation
+         if ( (ascii>=ASCII_A).and.(ascii<=ASCII_Z) ) text_out(ii:ii) = achar( ascii + ASCII_CASE_OFFSET )
+   end do
+   return
+end function convertLowerCase
 
 end module NBAX_StringTokenizers
 
