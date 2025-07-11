@@ -14,6 +14,7 @@ add_subdirectory(BFDF)
 add_subdirectory(Count)
 add_subdirectory(Flat)
 add_subdirectory(Linear)
+add_subdirectory(SaltAndPepperFilter)
 
 #Subdirectories for the static libraries
 add_subdirectory(CLOCK_Utils)

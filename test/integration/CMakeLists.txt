@@ -113,3 +113,18 @@ set_tests_properties(FlattenTest
     LABELS "EXAMPLE;LONG"
     #ctest will look for "PASS" in the stdout and consider it a pass if it finds it
     PASS_REGULAR_EXPRESSION "PASS")
+
+add_executable(test_saltandpepperfilter test_saltandpepperfilter.f90)
+target_link_libraries(test_saltandpepperfilter Clock_Utils Clock_Img )
+add_test( NAME saltandpepperfilter_test1 COMMAND test_saltandpepperfilter -t sandp1 -f ${CMAKE_INSTALL_PREFIX}/src/SaltAndPepperFilter/saltAndPepperFilter)
+set_tests_properties(saltandpepperfilter_test1
+    PROPERTIES
+    LABELS "EXAMPLE;SHORT"
+    #ctest will look for "PASS" in the stdout and consider it a pass if it finds it
+    PASS_REGULAR_EXPRESSION "PASS") 
+add_test( NAME saltandpepperfilter_test3 COMMAND test_saltandpepperfilter -t sandp3 -f ${CMAKE_INSTALL_PREFIX}/src/SaltAndPepperFilter/saltAndPepperFilter)
+set_tests_properties(saltandpepperfilter_test3
+    PROPERTIES
+    LABELS "EXAMPLE;SHORT"
+    #ctest will look for "PASS" in the stdout and consider it a pass if it finds it
+    PASS_REGULAR_EXPRESSION "PASS") 
