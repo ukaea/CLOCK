@@ -231,7 +231,7 @@ NB: using the filtered image from the previous example.
 * fe6cr_n_irrad_1.8dpa_fib_dam_DF.flat.spots.png - img9.flat.png with detected spots annotated. 
 
 ### Change log
-
+4.3.0 --> 4.4.0 Adding new programs/libs/tests
 4.2.0 --> 4.3.0 Default spot diameter colour scale set to "IBM", user options to change colour scale. start of implementation of new linear feaure code.
 
 4.1.0 --> 4.2.0 Changed default behaviour of Count to automatically set the spot detection threshold to three.
