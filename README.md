@@ -232,6 +232,7 @@ NB: using the filtered image from the previous example.
 
 ### Change log
 4.3.0 --> 4.4.0 Adding new programs/libs/tests
+
 4.2.0 --> 4.3.0 Default spot diameter colour scale set to "IBM", user options to change colour scale. start of implementation of new linear feaure code.
 
 4.1.0 --> 4.2.0 Changed default behaviour of Count to automatically set the spot detection threshold to three.

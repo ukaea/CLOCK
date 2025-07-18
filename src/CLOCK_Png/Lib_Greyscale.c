@@ -84,7 +84,7 @@ float* read_greyscale_png_file(char* file_name,int* width, int* height  )
         png_byte color_type = png_get_color_type(png_ptr, info_ptr);                                               
         png_byte bit_depth = png_get_bit_depth(png_ptr, info_ptr);                                                 
                                                                                                           
-        int number_of_passes = png_set_interlace_handling(png_ptr);                                           
+                                         
         png_read_update_info(png_ptr, info_ptr);                                                          
                                                                                                                                                         
                                                          
@@ -108,7 +108,8 @@ float* read_greyscale_png_file(char* file_name,int* width, int* height  )
                                                                                                             
         fclose(fp);     
         
-        if (color_type == PNG_COLOR_TYPE_RGB) {             
+        if (color_type == PNG_COLOR_TYPE_RGB) {            
+            // printf( "Lib_Greyscale::read_greyscale_png_file info - PNG_COLOR_TYPE_RGB \n");
             for (y=0; y<(*height); y++) {                                                                         
                  png_byte* row = row_pointers[y];                  
                  for (x=0; x<(*width); x++){
@@ -119,7 +120,8 @@ float* read_greyscale_png_file(char* file_name,int* width, int* height  )
                      img[x+(*width)*y] = (r+g+b)/(3*256.0);                
                  }
             }            
-        } else if (color_type == PNG_COLOR_TYPE_RGBA ) {             
+        } else if (color_type == PNG_COLOR_TYPE_RGBA ) {          
+            // printf( "Lib_Greyscale::read_greyscale_png_file info - PNG_COLOR_TYPE_RGBA \n");   
             for (y=0; y<(*height); y++) {                                                                         
                  png_byte* row = row_pointers[y];                  
                  for (x=0; x<(*width); x++){
@@ -130,7 +132,8 @@ float* read_greyscale_png_file(char* file_name,int* width, int* height  )
                      img[x+(*width)*y] = (r+g+b)/(3*256.0);                
                  }
             }      
-        } else if ( (color_type == PNG_COLOR_TYPE_PALETTE)&&(bit_depth == 8) ) {             
+        } else if ( (color_type == PNG_COLOR_TYPE_PALETTE)&&(bit_depth == 8) ) {         
+            // printf( "Lib_Greyscale::read_greyscale_png_file info - PNG_COLOR_TYPE_PALETTE(8) \n");    
             for (y=0; y<(*height); y++) {                                                                         
                  png_byte* row = row_pointers[y];                  
                  for (x=0; x<(*width); x++){
@@ -140,6 +143,7 @@ float* read_greyscale_png_file(char* file_name,int* width, int* height  )
                  }
             }                        
         } else if (color_type == PNG_COLOR_TYPE_GRAY) {  
+            // printf( "Lib_Greyscale::read_greyscale_png_file info - PNG_COLOR_TYPE_GRAY(%d) \n",bit_depth);    
             if (bit_depth<=8){                           
                 for (y=0; y<(*height); y++) {                                                                         
                      png_byte* row = row_pointers[y];                  
@@ -149,14 +153,21 @@ float* read_greyscale_png_file(char* file_name,int* width, int* height  )
                          img[x+(*width)*y] = g/(256.0);                
                      }
                 }      
-            } else {
+            } else {                
                 for (y=0; y<(*height); y++) {                                                                         
                      png_byte* row = row_pointers[y];                  
                      for (x=0; x<(*width); x++){
                          png_byte* ptr = &(row[2*x]);      
                          png_byte g = ptr[0];    
                          png_byte g2 = ptr[1];                     
-                         img[x+(*width)*y] = g/(256.0) + g2/(16384.0);
+                         int i = (int) (g*256 + g2);
+                         img[x+(*width)*y] = i/65536.0; // g/(256.0) + g2/(16384.0);
+
+                        // if ( (x==0)&&(y==0) ) {
+                        //  printf("Lib_Greyscale::read_greyscale_png_file %d,%d,%d,%.8f,%.8f \n",g,g2,i,i/65536.0,img[x+(*width)*y] );
+                        // }
+
+                         
                      }
                 }   
             }
@@ -249,7 +260,7 @@ void write_greyscale_png_file(char* file_name, int width, int height, float* img
                  float f = img[x+width*y];
 
                  if (f>0.999984741){
-                     f = 0.999984741;
+                     f = 0.999984741;                   //      1 - 1/65536
                  } else if (f<0.0){
                      f = 0.0;
                  }                                  
@@ -260,6 +271,13 @@ void write_greyscale_png_file(char* file_name, int width, int height, float* img
                  png_byte* ptr = &(row[x*2]); 
                  ptr[0] = hi;
                  ptr[1] = lo;
+
+
+                // if ( (x==0)&&(y==0) ) {
+                //     printf("Lib_Greyscale::write_greyscale_png_file %.8f,%d,%d,%d \n",f,i,hi,lo );
+                // }
+
+
              }
         }
                                                                                                           
@@ -404,6 +422,3 @@ void destroy_png_storage(float *img)
 {
    free(img);
 }
-                                                                                                       
-                                                                                                          
-

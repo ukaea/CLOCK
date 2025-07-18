@@ -49,6 +49,9 @@ work/
 *.bi.png
 *.recon_grid.png
 *.sinogram.png
+*.randc.png
+*.roi.png
+*.roidbg.png
 
 
 # VScode stuff
