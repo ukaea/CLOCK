@@ -33,5 +33,7 @@
         filtertest.png                                          |   Daniel Mason & James Heath (UKAEA)
         flattest.png                                            |   Daniel Mason & James Heath (UKAEA)
         test_synth_ms.png                                       |   Daniel Mason & James Heath (UKAEA)
+        shot_test_clean.png                                     |   Daniel Mason & James Heath (UKAEA)
+        shot_test_noisy.png                                     |   Daniel Mason & James Heath (UKAEA)
 
 

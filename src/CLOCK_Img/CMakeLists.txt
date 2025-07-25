@@ -24,6 +24,9 @@ add_library(Clock_Img STATIC
     Lib_LaplacianOfGaussians.F90    
     Lib_Radon.f90
     Lib_ImageTools.f90
+    Lib_ExtrapolateImage.F90
+    Lib_LaplacianKernel.f90
+
 )
 set_target_properties(Clock_Img PROPERTIES 
     Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/include)

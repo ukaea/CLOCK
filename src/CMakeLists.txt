@@ -15,6 +15,7 @@ add_subdirectory(Count)
 add_subdirectory(Flat)
 add_subdirectory(Linear)
 add_subdirectory(SaltAndPepperFilter)
+add_subdirectory(MLE_Filter)
 
 #Subdirectories for the static libraries
 add_subdirectory(CLOCK_Utils)
