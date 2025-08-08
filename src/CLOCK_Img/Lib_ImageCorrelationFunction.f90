@@ -26,6 +26,7 @@ module Lib_ImageCorrelationFunction
    use iso_fortran_env
 
    use Lib_png
+   use Lib_ColourScale
    implicit none
    private
 
@@ -33,6 +34,7 @@ module Lib_ImageCorrelationFunction
    public      ::      shrinkImage
 
    public      ::      optimalImageCorrelationFunction
+   public      ::      get_image_diff
 
    integer(kind=int64), private, parameter      ::      BADF00D = int(z'BADF00D', kind=int64)
    real(kind=real64), public, parameter         ::      ICF_DEAD_PIXEL = transfer((BADF00D + ishft(BADF00D, 32_int64)), 1.0d0)
@@ -557,5 +559,83 @@ contains
 
       return
    end subroutine firstDerivs
+
+            subroutine get_image_diff(image_f, image_g, image_diff_RGB_out,max_err_man)
+    !---^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    !---Calculates the absolute error between equal sized images and outputs a RGB png of results. Note image f will be the background
+            real(kind=real64),dimension(:,:),intent(in)         ::      image_f, image_g
+            real(kind=real64),intent(in)                         ::      max_err_man !if required set the max error value manually
+            real(kind=real64),dimension(:,:,:),intent(out),allocatable           ::      image_diff_RGB_out
+            real(kind=real64),dimension(:,:),allocatable           ::      image_diff
+            real(kind=real64),dimension(3)          ::  rgb_back,rgb_fore !RGB triplet for background and foregronud respectively.
+            real(kind=real64)                                   ::      diff,max_val,sum_err,min_val,shift_max
+            integer                                             ::      Nxf,Nyf,Nxg,Nyg !dimesnsions of images
+            integer                                             ::      ix,iy !pixel indices
+            integer                                             ::      count_diff_pixels
+
+            Nxf =size(image_f,1)
+            Nyf =size(image_f,2)
+            Nxg =size(image_g,1)
+            Nyg =size(image_g,2)
+            count_diff_pixels=0
+
+            if ((Nxf .ne. Nxg).or.(Nyf .ne. Nyg)) then
+                print*,"Lib_ImageCorrelationFunction|get_image_diff: images to compare are not the same dimension, aborting."
+                return
+            end if
+
+
+            allocate(image_diff_RGB_out(3,Nxf,Nyf))
+            allocate(image_diff(Nxf,Nyf))
+            image_diff=0.0d0
+            sum_err=0.0d0
+            do ix =1,Nxf
+                do iy=1,Nyf
+                    diff=image_f(ix,iy)-image_g(ix,iy)
+                    !diff=abs(diff)
+                    if(abs(diff)>0.0d0) count_diff_pixels=count_diff_pixels+1
+                    image_diff(ix,iy)=diff
+                    image_diff_RGB_out(1:3,ix,iy) = image_f(ix,iy) !if not just convert to RGB
+                    sum_err=sum_err+diff
+                end do
+            end do
+
+            print*,"Total error is:",sum_err
+            print*,"noof pixels that are different is:", count_diff_pixels
+
+            if (maxval(image_diff)>1.0d0)then
+                print*," Lib_ImageCorrelationFunction|get_image_diff: diff greater than 1.0, rescaling but may be issue"
+            end if
+
+            max_val=maxval(image_diff)
+            min_val=minval(image_diff)
+            if(max_err_man>0) max_val=max_err_man
+            print*,"Max diference is:",max_val,"Min difference is", min_val
+
+            if(min_val<0.0d0) then
+                image_diff=image_diff+(-1*min_val)
+                shift_max=maxval(image_diff)
+            end if
+
+            if (shift_max>(1.0d0/65535.0d0)) then
+                image_diff=image_diff/maxval(image_diff)
+            else
+                image_diff=0.0d0
+            end if
+
+
+
+            do ix =1,Nxf
+                do iy=1,Nyf
+                    rgb_fore = getRGB_double( image_diff(ix,iy) )!get RGB values for overlayed spot
+                    rgb_back = image_diff_RGB_out(1:3,ix,iy)
+                    image_diff_RGB_out(1:3,ix,iy) = transparentColour( rgb_back,rgb_fore,0.25d0 )
+                end do
+            end do
+
+
+
+        end subroutine get_image_diff
+
 
 end module Lib_ImageCorrelationFunction

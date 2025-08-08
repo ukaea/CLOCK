@@ -137,4 +137,13 @@ set_tests_properties(mlefiltertest
     LABELS "EXAMPLE;SHORT"
     #ctest will look for "PASS" in the stdout and consider it a pass if it finds it
     PASS_REGULAR_EXPRESSION "PASS") 
+
+add_executable(testImageCorrelation testImageCorrelation.f90)
+target_link_libraries(testImageCorrelation test_Utils Clock_Utils Clock_Png Clock_Img  ${PNG_LIBRARY})
+add_test( NAME ImageCorrelationtest COMMAND testImageCorrelation)
+set_tests_properties(ImageCorrelationtest
+    PROPERTIES
+    LABELS "EXAMPLE;SHORT"
+    #ctest will look for "PASS" in the stdout and consider it a pass if it finds it
+    PASS_REGULAR_EXPRESSION "PASS") 
  

@@ -24,6 +24,7 @@ module Lib_UtilsForTests
    public          ::      haveAllSubTestsPassed
    public          ::      announceSubTest
    public          ::      announcePassOrFail
+   public          ::      str2real
 
 contains
 
@@ -66,5 +67,21 @@ contains
       end if
 
    end subroutine announcePassOrFail
+
+       pure real(kind=real64) function str2real( str_in)
+!---^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+!*  convert string to real
+        character(len=:),intent(in),allocatable :: str_in
+        integer                         ::  istat
+
+        read (str_in,"(f5.2)",iostat=istat) str2real
+        if (istat/=0) then
+            str2real=0.0d0
+        end if
+
+        
+
+        return
+    end function str2real
 
 end module Lib_UtilsForTests
