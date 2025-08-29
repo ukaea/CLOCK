@@ -88,3 +88,12 @@ set_tests_properties(ImageToolsTest
     LABELS "EXAMPLE;SHORT"
     #ctest will look for "PASS" in the stdout and consider it a pass if it finds it
     PASS_REGULAR_EXPRESSION "PASS")
+
+add_executable(testLib_SafeExp testLib_SafeExp.f90)
+target_link_libraries(testLib_SafeExp Clock_Utils )
+add_test(NAME testLib_SafeExp_test COMMAND testLib_SafeExp)
+set_tests_properties(testLib_SafeExp_test
+    PROPERTIES
+    LABELS "EXAMPLE;SHORT"
+    #ctest will look for "PASS" in the stdout and consider it a pass if it finds it
+    PASS_REGULAR_EXPRESSION "PASS")

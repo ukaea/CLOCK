@@ -21,7 +21,8 @@ add_library(Clock_Utils STATIC
     Lib_RandomSeed.f90
     Lib_Filenames.f90
     Lib_ColouredTerminal.f90
-    pipes_module.f90)
+    pipes_module.f90
+    Lib_SafeExp.F90)
 set_target_properties(Clock_Utils PROPERTIES 
     Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/include)
 target_include_directories(Clock_Utils
