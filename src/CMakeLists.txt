@@ -17,6 +17,7 @@ add_subdirectory(Linear)
 add_subdirectory(SaltAndPepperFilter)
 add_subdirectory(MLE_Filter)
 add_subdirectory(ImageCorrelation)
+add_subdirectory(TestImageGenerator)
 
 #Subdirectories for the static libraries
 add_subdirectory(CLOCK_Utils)

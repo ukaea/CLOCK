@@ -97,3 +97,12 @@ set_tests_properties(testLib_SafeExp_test
     LABELS "EXAMPLE;SHORT"
     #ctest will look for "PASS" in the stdout and consider it a pass if it finds it
     PASS_REGULAR_EXPRESSION "PASS")
+
+add_executable(testDrawEllipse testLib_DrawEllipse.f90)
+target_link_libraries(testDrawEllipse test_Utils Clock Clock_Img)
+add_test(NAME DrawEllipseTest COMMAND testDrawEllipse)
+set_tests_properties(DrawEllipseTest
+    PROPERTIES
+    LABELS "EXAMPLE;SHORT"
+    #ctest will look for "PASS" in the stdout and consider it a pass if it finds it
+    PASS_REGULAR_EXPRESSION "PASS")

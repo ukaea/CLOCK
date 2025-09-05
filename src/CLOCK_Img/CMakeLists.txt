@@ -26,6 +26,7 @@ add_library(Clock_Img STATIC
     Lib_ImageTools.f90
     Lib_ExtrapolateImage.F90
     Lib_LaplacianKernel.f90
+    Lib_Perlin.f90
 
 )
 set_target_properties(Clock_Img PROPERTIES 
