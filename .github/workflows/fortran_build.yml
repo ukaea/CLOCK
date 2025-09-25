@@ -6,6 +6,7 @@ on:
       - RSE_get_CI_working #[ $default-branch ]
       - Dev
       - main
+      - 4.4.0-Add-new-libs/tests/programs
   pull_request:
     branches: 
       - RSE_get_CI_working #[ $default-branch ]
