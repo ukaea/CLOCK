@@ -146,4 +146,13 @@ set_tests_properties(ImageCorrelationtest
     LABELS "EXAMPLE;SHORT"
     #ctest will look for "PASS" in the stdout and consider it a pass if it finds it
     PASS_REGULAR_EXPRESSION "PASS") 
+
+add_executable(testHeteroscedastic_Fit test_Lib_Heteroscedastic_Fit.f90)
+    target_link_libraries(testHeteroscedastic_Fit Clock_Utils Clock ${LAPACK_LIBRARIES})
+    add_test(NAME Heteroscedastic_Fittest COMMAND testHeteroscedastic_Fit)
+    set_tests_properties(Heteroscedastic_Fittest
+        PROPERTIES
+        LABELS "EXAMPLE;SHORT"
+        #ctest will look for "PASS" in the stdout and consider it a pass if it finds it
+        PASS_REGULAR_EXPRESSION "PASS")
  
