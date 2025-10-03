@@ -106,3 +106,12 @@ set_tests_properties(DrawEllipseTest
     LABELS "EXAMPLE;SHORT"
     #ctest will look for "PASS" in the stdout and consider it a pass if it finds it
     PASS_REGULAR_EXPRESSION "PASS")
+
+add_executable(testHistograms testLib_Histograms.f90)
+target_link_libraries(testHistograms test_Utils Clock Clock_Img)
+add_test(NAME HistogramsTest COMMAND testHistograms)
+set_tests_properties(HistogramsTest
+    PROPERTIES
+    LABELS "EXAMPLE;SHORT"
+    #ctest will look for "PASS" in the stdout and consider it a pass if it finds it
+    PASS_REGULAR_EXPRESSION "PASS")
