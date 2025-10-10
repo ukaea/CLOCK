@@ -155,4 +155,17 @@ add_executable(testHeteroscedastic_Fit test_Lib_Heteroscedastic_Fit.f90)
         LABELS "EXAMPLE;SHORT"
         #ctest will look for "PASS" in the stdout and consider it a pass if it finds it
         PASS_REGULAR_EXPRESSION "PASS")
- 
+
+add_executable(imageScaleTest testScaleImage.f90)
+    target_link_libraries(imageScaleTest test_Utils Clock_Utils Clock_Png Clock_Img  ${PNG_LIBRARY})
+    add_test(NAME testImageScale COMMAND imageScaleTest)
+    set_tests_properties(testImageScale
+        PROPERTIES
+        LABELS "EXAMPLE;SHORT"
+        #ctest will look for "PASS" in the stdout and consider it a pass if it finds it
+        PASS_REGULAR_EXPRESSION "PASS")
+
+add_test(NAME clean_up_itegration_tests #this calls cleanuptests.cmake that deletes all temporary files associated with testing
+    COMMAND ${CMAKE_COMMAND} #this might need to be last
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/cleanup_integration_tests.cmake
+  )
