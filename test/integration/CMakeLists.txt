@@ -165,6 +165,16 @@ add_executable(imageScaleTest testScaleImage.f90)
         #ctest will look for "PASS" in the stdout and consider it a pass if it finds it
         PASS_REGULAR_EXPRESSION "PASS")
 
+add_executable(imageUtilitiesTest testImageUtilities.f90)
+    target_link_libraries(imageUtilitiesTest test_Utils Clock_Utils Clock_Png Clock_Img  ${PNG_LIBRARY})
+    add_test(NAME testImageUtilities COMMAND imageUtilitiesTest)
+    set_tests_properties(testImageUtilities
+        PROPERTIES
+        LABELS "EXAMPLE;SHORT"
+        #ctest will look for "PASS" in the stdout and consider it a pass if it finds it
+        PASS_REGULAR_EXPRESSION "PASS")
+
+#CLEAN UP NEEDS TO BE LAST
 add_test(NAME clean_up_integration_tests #this calls cleanuptests.cmake that deletes all temporary files associated with testing
     COMMAND ${CMAKE_COMMAND} #this might need to be last
       -P ${CMAKE_CURRENT_SOURCE_DIR}/cleanup_integration_tests.cmake
