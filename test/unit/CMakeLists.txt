@@ -115,3 +115,9 @@ set_tests_properties(HistogramsTest
     LABELS "EXAMPLE;SHORT"
     #ctest will look for "PASS" in the stdout and consider it a pass if it finds it
     PASS_REGULAR_EXPRESSION "PASS")
+
+#CLEAN UP NEEDS TO BE LAST
+add_test(NAME clean_up_unit_tests #this calls cleanuptests.cmake that deletes all temporary files associated with testing 
+    COMMAND ${CMAKE_COMMAND} #this might need to be last
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/clean_up_unit_tests.cmake
+  )
