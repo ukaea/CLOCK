@@ -174,6 +174,16 @@ add_executable(imageUtilitiesTest testImageUtilities.f90)
         #ctest will look for "PASS" in the stdout and consider it a pass if it finds it
         PASS_REGULAR_EXPRESSION "PASS")
 
+find_program(BASH_PROGRAM bash)
+if (BASH_PROGRAM)
+  add_test(testF1score ${BASH_PROGRAM} ${CMAKE_CURRENT_SOURCE_DIR}/testF1score.sh )
+endif()
+set_tests_properties(testF1score
+    PROPERTIES
+    LABELS "EXAMPLE;SHORT"
+    #ctest will look for "PASS" in the stdout and consider it a pass if it finds it
+    PASS_REGULAR_EXPRESSION "PASS")  
+
 #CLEAN UP NEEDS TO BE LAST
 add_test(NAME clean_up_integration_tests #this calls cleanuptests.cmake that deletes all temporary files associated with testing
     COMMAND ${CMAKE_COMMAND} #this might need to be last
