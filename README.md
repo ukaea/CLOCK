@@ -231,6 +231,8 @@ NB: using the filtered image from the previous example.
 * fe6cr_n_irrad_1.8dpa_fib_dam_DF.flat.spots.png - img9.flat.png with detected spots annotated. 
 
 ### Change log
+4.4.0 --> 5.0.0 Gaussian & ellipse drawing/analysis functions consolidated in Lib_DrawEllipse. Count now uses the heteroscedastic error model to estimate faint/small spot undercounts.
+
 4.3.0 --> 4.4.0 Adding new programs/libs/tests
 
 4.2.0 --> 4.3.0 Default spot diameter colour scale set to "IBM", user options to change colour scale. start of implementation of new linear feaure code.
