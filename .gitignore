@@ -49,6 +49,13 @@ work/
 *.bi.png
 *.recon_grid.png
 *.sinogram.png
+*.randc.png
+*.roi.png
+*.roidbg.png
+
+# test outputs
+data/shot_test_clean.mle.png
+data/shot_test_noisy.mle.png
 
 
 # VScode stuff

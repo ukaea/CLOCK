@@ -1,0 +1,7 @@
+# Clock 4.3.1
+# 
+#     300.000     300.000 micrograph extent (px)
+#    90000.000  micrograph area (px) discounting dead pixels
+#      1  number of spots
+# pos x (px)  pos y (px) diam 1 (px) diam 2 (px)  angle(deg)   intensity    t* value     quality
+    250.000     100.000      20.000      12.668     164.135       0.251      64.498    3427.655

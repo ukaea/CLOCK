@@ -125,7 +125,7 @@ src/AnalysePngHistogram.f90 is the main code
 
 *example*:
 
-    >   ./build/bin/bfdf -f data/fe6cr_n_irrad_1.8dpa_fib_dam_BF.png | grep "best"
+    >   ./build/src/BFDF/bfdf -f data/fe6cr_n_irrad_1.8dpa_fib_dam_BF.png | grep "best"
 
 *output*:
 
@@ -134,7 +134,7 @@ src/AnalysePngHistogram.f90 is the main code
 
 *NB:* 
 
-    >   ./build/bin/bfdf -f data/fe6cr_n_irrad_1.8dpa_fib_dam_BF.png > anameofyourchoosing.txt
+    >   ./build/src/BFDF/bfdf -f data/fe6cr_n_irrad_1.8dpa_fib_dam_BF.png > anameofyourchoosing.txt
     
 for additional fitting info.
 
@@ -168,11 +168,11 @@ images use the -negative parameter to invert the image.
 
 Filter the image with no background subtraction by removing salt-and-pepper noise and using a 4 px maximum likelihood filter and removing first two fourier coefficients.
 
-    >   ./build/bin/flat -f data/fe6cr_n_irrad_1.8dpa_fib_dam_DF.png -o data/fe6cr_n_irrad_1.8dpa_fib_dam_DF.sandp.png -sandp -lambda 2.0 -noflat -hpf 2
+    >   ./build/src/Flat/flat -f data/fe6cr_n_irrad_1.8dpa_fib_dam_DF.png -o data/fe6cr_n_irrad_1.8dpa_fib_dam_DF.sandp.png -sandp -lambda 2.0 -noflat -hpf 2
 
 Perform a background subtraction ( best to start from the filtered image if you have it, but you can do it all in one step ) assuming intensity zero pixels are intentional and using four loops.
 
-    >   ./build/bin/flat -f data/fe6cr_n_irrad_1.8dpa_fib_dam_DF.sandp.png  -o data/fe6cr_n_irrad_1.8dpa_fib_dam_DF.flat.png -nozero -n 4
+    >   ./build/src/Flat/flat -f data/fe6cr_n_irrad_1.8dpa_fib_dam_DF.sandp.png  -o data/fe6cr_n_irrad_1.8dpa_fib_dam_DF.flat.png -nozero -n 4
 
 *output*:
 
@@ -222,7 +222,7 @@ fits 2D gaussians to the spots and produces a size frequency histogram
 
 NB: using the filtered image from the previous example.
 
-    >   ./build/bin/count -f data/fe6cr_n_irrad_1.8dpa_fib_dam_DF.flat.png -png -x 0
+    >   ./build/src/Count/count -f data/fe6cr_n_irrad_1.8dpa_fib_dam_DF.flat.png -png -x 0
 
 *output*: 
 
@@ -231,6 +231,9 @@ NB: using the filtered image from the previous example.
 * fe6cr_n_irrad_1.8dpa_fib_dam_DF.flat.spots.png - img9.flat.png with detected spots annotated. 
 
 ### Change log
+4.4.0 --> 5.0.0 Gaussian & ellipse drawing/analysis functions consolidated in Lib_DrawEllipse. Count now uses the heteroscedastic error model to estimate faint/small spot undercounts.
+
+4.3.0 --> 4.4.0 Adding new programs/libs/tests
 
 4.2.0 --> 4.3.0 Default spot diameter colour scale set to "IBM", user options to change colour scale. start of implementation of new linear feaure code.
 

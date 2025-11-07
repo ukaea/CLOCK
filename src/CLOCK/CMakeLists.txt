@@ -18,6 +18,10 @@ add_library(Clock STATIC
     Lib_Kernels.f90
     Lib_Stats.f90
     Lib_Graphs.f90
+    Lib_LogNormal.f90
+    Lib_DrawEllipse.f90
+    Lib_Heteroscedastic_Fit.f90
+    Lib_Histograms.f90
 )
 
 find_package(PkgConfig REQUIRED)
