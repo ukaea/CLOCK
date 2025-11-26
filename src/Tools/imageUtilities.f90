@@ -142,7 +142,7 @@ program imageUtilities
 
         !if(hasArgument(cla,"fftps")) then
         if (get_fft_power_spec) then
-            allocate(fftout(((2*(Nx/2+1)-1)),Ny))
+            allocate(fftout(0:((2*(Nx/2+1)-1)),0:Ny)) 
             allocate( rpf(0:100) )
             allocate( cprime(0:100) )
             call FFT2d( img,fftout )
@@ -206,7 +206,12 @@ program imageUtilities
                     noof_px_0t=noof_px_0t+1
                 end do
             end do
-            mu_0t=mu_0t/noof_px_0t
+            if (noof_px_0t>0) then !escape if no pixels over threshold
+                mu_0t=mu_0t/noof_px_0t
+            else 
+                mu_0t=0
+            end if
+            
 
             do ix=1,nx ! go through image 2nd time to get variance of pixels between 0 and t
                 do iy=1,ny
@@ -217,7 +222,11 @@ program imageUtilities
 
                 end do
             end do
-            var_0t=var_0t/noof_px_0t
+            if (noof_px_0t>0) then !escape if no pixels over threshold
+                var_0t=var_0t/noof_px_0t
+            else 
+                var_0t=0
+            end if
 
 
             print*,"image utilities, bg variance =",(s*s)

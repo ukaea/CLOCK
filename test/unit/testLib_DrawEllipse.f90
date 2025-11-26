@@ -48,6 +48,9 @@
         real(kind=real64)   ::      tolerance=1.0e-8 !floating ponit tolerance
         integer             ::      ii
 
+        LIB_DRAWELLIPSE_GAUSSMULT = 5               !   for these tests, use long-range gaussians out to 5 stdev
+        LIB_DRAWELLIPSE_RSS_REMOVE_BG = .false.     !   for these unit tests, do not remove the background level
+
         correctcount=0
 
         Nx = floor(10*max(s1,s2)) 
@@ -80,7 +83,7 @@
         call drawEllipse(D1,p1,img_rgb,COLOURSCALE_VIRIDIS,f=0.8d0,mode=LIB_DRAWELLIPSE_SHADE_GAUSSIAN)
         call write_rgb_png("test_rgb.png",img_rgb)
         print*, "img rgb sum is:", sum(img_rgb)
-        tempCheck = (abs(sum(img_rgb)/3249.1868163037811d0-1)<tolerance) 
+        tempCheck = (abs(sum(img_rgb)/3249.1868163037811d0-1)<tolerance)        !   note: changed 05/11/25 
         call announceSubTest(libName,"drawEllipse: LIB_DRAWELLIPSE_SHADE_GAUSSIAN",2,noofTests,tempCheck,correctcount)
 
         !test 3, Is the rectangular IoU of identical ellipses 1.0?

@@ -20,6 +20,7 @@
         fe6cr_n_irrad_1.8dpa_fib_dam_BF.png                     |   Jack Haley (UKAEA)
         fe6cr_n_irrad_1.8dpa_fib_dam_DF.png                     |   Jack Haley (UKAEA)
         W_30K_0.2dpa_DF.png                                     |   Jack Haley (UKAEA)
+        W_30K_0.2dpa_DF_crop.png                                |   Jack Haley (UKAEA)
                                                                 
 !*  Public domian test images                                   
         test_cameraman.png                                      |   Lav Varshney (CC0)

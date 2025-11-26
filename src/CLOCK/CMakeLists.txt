@@ -22,6 +22,7 @@ add_library(Clock STATIC
     Lib_DrawEllipse.f90
     Lib_Heteroscedastic_Fit.f90
     Lib_Histograms.f90
+    Lib_GaussianEstimator.f90
 )
 
 find_package(PkgConfig REQUIRED)

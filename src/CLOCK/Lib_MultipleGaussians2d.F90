@@ -20,7 +20,7 @@ module Lib_MultipleGaussians2d
 !*-----------------------------------------------------------------------------------------------------------------------------------
 !*      code which defines and fits a multiple 2d gaussians to input data
 !*
-
+!*       
         use Lib_GoldenSection
         use Lib_Gaussian2d
         use Lib_Quicksort
@@ -38,7 +38,7 @@ module Lib_MultipleGaussians2d
         public          ::      MultipleGaussians2d_ctor
         public          ::      report
         public          ::      delete
-         
+            
     !---        
     
         public          ::      fit
@@ -65,13 +65,13 @@ module Lib_MultipleGaussians2d
         public          ::      add
         public          ::      setLib_MultipleGaussians2d_dbg
         public          ::      setIgnore!ignore_individual_guassian
-        public          ::      ignore_individual_guassian
-        ! public          ::      Cullspot    !gets rid of spot if eccentricity is greater than input
+
         
     !---
         
         real(kind=real64),private,parameter         ::      PI = 3.141592653590d0
         
+        real(kind=real64),private,parameter         ::      IGNORE_MY_WEIGHT = -1.0d0       !   set weight to -1 to be ignored
         
 
         logical,private                 ::      LIB_MG2D_DBG = .false.
@@ -109,14 +109,11 @@ module Lib_MultipleGaussians2d
         interface report
             module procedure    report0
         end interface
-         
+            
         interface fit
             module procedure    fit0
         end interface
-        
-        interface loglikelihood
-            module procedure    loglikelihood0
-        end interface
+            
         
         interface getDat
             module procedure    get0
@@ -205,13 +202,8 @@ module Lib_MultipleGaussians2d
         end interface
         
         interface ignore
-        !    module procedure    ignore0
             module procedure    ignore1
         end interface
-
-        ! interface Cullspot
-        !         module procedure Cullspot0
-        ! end interface
 
         
         
@@ -257,10 +249,10 @@ module Lib_MultipleGaussians2d
             this%q = 0
             return
         end function MultipleGaussians2d_ctor0
-         
+            
         
         function MultipleGaussians2d_ctor1(g) result(this)
-    !---^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    !---^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     !*      construct a wrapper for an input set of gaussians
             type(Gaussian2d),dimension(:),intent(in)     ::      g
             type(MultipleGaussians2d)           ::      this
@@ -275,10 +267,10 @@ module Lib_MultipleGaussians2d
             this%q = 0
             return
         end function MultipleGaussians2d_ctor1
-         
+            
 
         function MultipleGaussians2d_ctor2(dat) result(this)
-    !---^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+    !---^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
     !*      construct a wrapper for an input set of Gaussians defined by their raw data values
     !*      note: advanced call does not set sigma or weight.
     !*      dat in order  ( x0,y0,f0,Dxx,Dxy,Dyy )
@@ -296,7 +288,7 @@ module Lib_MultipleGaussians2d
             this%q = 0
             return
         end function MultipleGaussians2d_ctor2
-         
+            
     !---
 
         subroutine delete0(this)
@@ -327,7 +319,7 @@ module Lib_MultipleGaussians2d
 
             uu = 6 ; if (present(u)) uu = u
             oo = 0 ; if (present(o)) oo = o
-            write(unit=uu,fmt='(8(a,i6))') repeat(" ",oo)//"MultipleGaussians2d [n = ",count(this%w>0),"/",this%n,"]"    
+            write(unit=uu,fmt='(2(a,i6),2(a,f10.3))') repeat(" ",oo)//"MultipleGaussians2d [n = ",count(this%w>0),"/",this%n," ]"    
             do ii = 1,this%n
                 if (.not. ignore(this,ii)) then
                     write(unit=uu,fmt='(8(a,f10.3))',advance="no") repeat(" ",oo+4)//"[w,t,q=",this%w(ii),",",this%t(ii),",",this%q(ii),"] "
@@ -350,7 +342,7 @@ module Lib_MultipleGaussians2d
             real(kind=real64),dimension(0:,0:),intent(in)   ::      img
             integer,dimension(0:,0:),intent(in)             ::      indx
             real(kind=real64),intent(in)                    ::      imin,imax
-           
+            
             
             integer             ::      Nx,Ny
             integer             ::      ii,nGroups,nn, nPeaks   
@@ -367,11 +359,12 @@ module Lib_MultipleGaussians2d
             integer                                         ::      nTrialsMax
             real(kind=real64)                               ::      aa
             type(MultipleGaussians2d)                       ::      mg2d_trial
+            logical                                         ::      ok
             
             Nx = size(img,dim=1)
             Ny = size(img,dim=2)
- 
-        !---    temporarily relax thresholds for fitting
+    
+        !---    temporarily relax thresholds for individual fitting
             E_THRESH = E_THRESH*2
             DETECTFMIN = DETECTFMIN/2            
             
@@ -394,14 +387,18 @@ module Lib_MultipleGaussians2d
             nn = 0
             do ii = 1,this%n
             
+            !---    fit peak ii , place in gg
                 if (LIB_MG2D_DBG) then
                     print *,"Lib_MultipleGaussians2d::fit0 info - fitting individual peak ",ii,"/",this%n," px ",count(indx==ii)                
-                    call fit( gg,img_tmp,imin,imax,mask = (indx==ii), dbg=.true. )
+                    call fit( gg,img_tmp,imin,imax,mask = (indx==ii),ok=ok, dbg=.true. )
                 else
-                    call fit( gg,img_tmp,imin,imax,mask = (indx==ii) )
+                    call fit( gg,img_tmp,imin,imax,mask = (indx==ii),ok=ok )
                 end if                
-                 
+                    
+
+            !---    report for debugging?
                 if (LIB_MG2D_DBG) then
+                    print *,"Lib_MultipleGaussians2d::fit0 info - individual peak including offset"
                     call report(gg)
                     img_dbg = imin
                     where (indx/=ii)
@@ -416,7 +413,8 @@ module Lib_MultipleGaussians2d
                     call writePng(trim(numberFile("input",ii))//".png",img_dbg)
                 end if
                 
-                if (.not. ignore(gg)) then
+            !---    should we save this peak?
+                if (ok .and. .not. ignore(gg)) then
                     nn = nn + 1
                     call subtract( img_tmp,gg )
                     img_tmp = max(0.0d0,img_tmp)
@@ -426,7 +424,7 @@ module Lib_MultipleGaussians2d
                     if (aa>0) then
                         this%w(nn) = weight( gg ) !* count( indx==ii )/aa
                     else
-                        this%w(nn) = -1
+                        this%w(nn) = IGNORE_MY_WEIGHT
                     end if
                 else if (LIB_MG2D_DBG) then
                     print *,"Lib_MultipleGaussians2d::fit0 info - ignore peak ",ii 
@@ -437,42 +435,46 @@ module Lib_MultipleGaussians2d
                 
             end do
             
-        !---    allocate memory
-            this%n = nn             !   note that I could have discarded a few at this stage.            
-    !---    restore thresholds for fitting
+    !---    restore thresholds for combined fitting
             E_THRESH = E_THRESH/2
-            DETECTFMIN = DETECTFMIN*2            
-    
+            DETECTFMIN = DETECTFMIN*2                
+
+        !---    allocate memory
+            this%n = nn             !   note that I could have discarded a few individual peaks at this stage 
             if (this%n == 0) return !   quick escape for nothing to do.
             
             allocate(overlapMatrix(this%n,this%n))
             allocate(group(0:this%n,this%n))        !   group(0,i) is number in the ith group. group(j,i) is the jth gaussian in the group.
             
-            nTrialsMax = min(1000,this%n*this%n)
+            nTrialsMax = min(1000,max(2,this%n*this%n))
             allocate(dat_trial(0:6,this%n,nTrialsMax))  !   data for the trial
             allocate(aic_trial(nTrialsMax))             !   quality of fit for the trial
             allocate(nspot_trial(nTrialsMax))           !   number of spots considered in the trial
             aic_trial = huge(1.0)                       !   if this trial hasn't been considered, then assume its a terrible fit
-                         
-            call cleanImg( img,imin,imax,img_tmp )
+                            
+            call cleanImg( img,imin,imax,img_tmp )      !   produce a tidied up version of the image
             where ( indx==0 )
                 img_tmp = LIB_G2D_IGNORE
             end where 
                 
             
             
-             
+                
         !---    now we need to decide what the best number of gaussians is.
         !       there could be a very large number of individual gaussians to fit here.
         !       fitting all simultaneously is hard, so try a divide-and-conquer strategy by fitting groups rather than all at once
         !       for this to be successful, first need to split the long list of possible gaussians into safe groups.
         !       I define a safe group as containing members with low overlap.    
         
-            if (LIB_MG2D_DBG) call report(this)
-            if (LIB_MG2D_DBG) print *,""
-            if (LIB_MG2D_DBG) print *,"Lib_MultipleGaussians2d::fit0 info - considering combinations of spots in ",count(img_tmp/=LIB_G2D_IGNORE)," px"
-            if (LIB_MG2D_DBG) print *,""
-            
+            if (LIB_MG2D_DBG) then
+                print *,""
+                print *,""
+                print *,"Lib_MultipleGaussians2d::fit0 info - individual spot fitting returns unrefined full list:"
+                call report(this)
+                print *,""
+                print *,"Lib_MultipleGaussians2d::fit0 info - considering combinations of spots in ",count(img_tmp/=LIB_G2D_IGNORE)," px"
+                print *,""
+            end if
 
 
 
@@ -480,12 +482,16 @@ module Lib_MultipleGaussians2d
 
         !---------------------------------
         !
-        !   TRIAL 1 - individual points 
+        !   TRIAL 1 - individual spots , fitted individually
         !
         !
         !---------------------------------
 
             trial = 1           
+            if (LIB_MG2D_DBG) then
+                print *,""
+                print *,"Lib_MultipleGaussians2d::fit0 info - starting trial ",trial
+            end if
         !---    store the fit from the individual gaussian peaks               
             nn = 0
             do ii = 1,this%n
@@ -496,61 +502,67 @@ module Lib_MultipleGaussians2d
             end do
             nspot_trial(trial) = nn
             mg2d_trial = MultipleGaussians2d_ctor(dat_trial(1:6,1:nn,trial))
-            aic_trial(trial) = aic_value( this,img_tmp )    !   2*( 6*nn + 1 ) - 2*loglikelihood0( this,img_tmp )
-            call delete( mg2d_trial )
+            aic_trial(trial) = aic_value( mg2d_trial,img_tmp )    
+            
 
-            if (LIB_MG2D_DBG) print *,"Lib_MultipleGaussians2d::fit0 info - trial 1 (separate spots) AIC = ",aic_trial(trial),getRss(this,img_tmp),count(img_tmp/=LIB_G2D_IGNORE)
+            if (LIB_MG2D_DBG) print *,"Lib_MultipleGaussians2d::fit0 info - trial 1 (separate spots) AIC = ",aic_trial(trial)!,getRss(this,img_tmp),count(img_tmp/=LIB_G2D_IGNORE)
             nTrials = 1    
 
+
+
+
+
+            
             do trial = 2,nTrialsMax             !   try different numbers of spots
             
-                if (LIB_MG2D_DBG) print *,""
-                if (LIB_MG2D_DBG) print *,"Lib_MultipleGaussians2d::fit0 info - starting trial ",trial
-                if (trial == 2) then
-                    !---------------------------------
-                    !
-                    !   TRIAL 2 - individual points , refitted together
-                    !
-                    !
-                    !---------------------------------
-                    !   only have the individually fitted spots to consider, so assume all weights are good and try and fit them all.    
-                else
-                    !---------------------------------
-                    !
-                    !   TRIAL 3+ - lose the lowest weights
-                    !
-                    !
-                    !---------------------------------
+                if (LIB_MG2D_DBG) then
+                    print *,""
+                    print *,"Lib_MultipleGaussians2d::fit0 info - starting trial ",trial
+                end if
+
+                if (trial > 2) then
                     !   now have the fully fitted spots, so use the last trial as the starting guess...                    
                     nn = nSpot_trial(trial-1) - 1           !   less the lowest weighted spot
-                    if (nn == 0) then   
+                    if (nn <= 0) then   
                         !   no spots left to fit. Quit
                         nTrials = trial-1
+                        if (LIB_MG2D_DBG) print *,"Lib_MultipleGaussians2d::fit0 info - no spots remaining "
                         exit
                     end if
-                    call setDat( this,dat_trial(1:6,1:nn,trial-1) )
-                    this%w(1:nn) = dat_trial(0,1:nn,trial-1)
-                    
-                end if       
-                    
-                call groupSpots( this, Nx,Ny, group, nGroups )              
-                call fit_groups( this, img_tmp, group(:,1:nGroups) )  
-                     
+                end if
+
                 
-            !---    store the fit                
-                call orderByWeight( this )      
+                call setDat( mg2d_trial,dat_trial(1:6,1:nn,trial-1) )       !   use the previous trial as an initial guess
+                mg2d_trial%w(1:nn) = dat_trial(0,1:nn,trial-1)
+                    
+                        
+                    
+            !---    group the remaining spots, and refine the fit by groups
+                call groupSpots( mg2d_trial, Nx,Ny, group, nGroups )          
+                if (LIB_MG2D_DBG) print *,"Lib_MultipleGaussians2d::fit0 info - nn,nGroups,mg2d%n = ",nn,nGroups,mg2d_trial%n
+                call fit_groups( mg2d_trial, img_tmp, group(:,1:nGroups) )  
+                        
+                
+            !---    store the fit, excluding any "bad" gaussians          
+                do ii = 1,mg2d_trial%n
+                    mg2d_trial%w(ii) = weight( mg2d_trial%g(ii) ) 
+                end do   
+                call orderByWeight( mg2d_trial )      
                 nn = 0
-                do ii = 1,this%n
-                    if (this%w(ii)<0) cycle
+                do ii = 1,mg2d_trial%n
+                    if (mg2d_trial%w(ii)<0) cycle
                     nn = nn + 1
-                    dat_trial(0,nn,trial) = this%w(ii)
-                    dat_trial(1:6,nn,trial) = getDat( this,ii )
+                    dat_trial(0,nn,trial) = mg2d_trial%w(ii)
+                    dat_trial(1:6,nn,trial) = getDat( mg2d_trial,ii )
                 end do
                 nspot_trial(trial) = nn
+
+
+            !---    find the aic value of the "good" gaussians
                 mg2d_trial = MultipleGaussians2d_ctor(dat_trial(1:6,1:nn,trial))
-                aic_trial(trial) = aic_value( mg2d_trial,img_tmp ) !  2*( 6*nn + 1 ) - 2*loglikelihood0( this,img_tmp )
-                call delete( mg2d_trial )
-                if (LIB_MG2D_DBG) print *,"Lib_MultipleGaussians2d::fit0 info - trial ",trial," AIC = ",aic_trial(trial),count(img_tmp/=LIB_G2D_IGNORE)
+                aic_trial(trial) = aic_value( mg2d_trial,img_tmp )  
+                
+                if (LIB_MG2D_DBG) print *,"Lib_MultipleGaussians2d::fit0 info - trial ",trial," AIC = ",aic_trial(trial)," nn remaining = ",nn
 
                 nTrials = trial   
                 
@@ -561,9 +573,10 @@ module Lib_MultipleGaussians2d
                     if ( (aic_trial(trial)>aic_trial(trial-1)).and.(aic_trial(trial-1)>aic_trial(trial-2)) ) exit   !   for the last two turns, the aic has not improved by removing a spot.
                 end if                
                 
-                 
-             
+                    
+                
             end do
+            call delete( mg2d_trial )
             
             if (LIB_MG2D_DBG) then
                 do trial = 1,nTrials
@@ -585,7 +598,7 @@ module Lib_MultipleGaussians2d
                 this%t(ii) = 0.0d0
                 if (LIB_MG2D_DBG) call report(this%g(ii))                 
             end do
-             
+                
             
             
             
@@ -597,10 +610,10 @@ module Lib_MultipleGaussians2d
                 call writePng("multiple_output.png",img_dbg)
                 print *,""
             end if
-                     
+                        
             return
         end subroutine fit0    
-       
+        
         subroutine findT( this,img,imin,imax,sigma )
     !---^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     !*      compute t-values on all gaussians
@@ -628,13 +641,11 @@ module Lib_MultipleGaussians2d
                 call add( img_tmp,this%g(ii) )
                 this%t(ii) = getT( this%g(ii),img_tmp,sigma )
 
-                
-                
             end do
             
             return
         end subroutine findT            
-         
+            
         subroutine findQ( this,img,imin,imax,sigma )
     !---^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     !*      compute q-values on all gaussians
@@ -657,7 +668,7 @@ module Lib_MultipleGaussians2d
         
             call cleanImg( img,imin,imax,img_clean )
             call subtract( img_clean, this )
-            !img_clean=max(0.0d0,img_clean)
+            
             this%q = 0.0d0
             do ii = 1,this%n
                 img_tmp = img_clean
@@ -670,7 +681,7 @@ module Lib_MultipleGaussians2d
                 rss = getRss( this%g(ii),img_tmp )
                 npx = count(img_tmp /= LIB_G2D_IGNORE)
                 !this%q(ii) = 2*(6+1) + 2*npx*log( rss/max(sigma,sigma*npx) )      !   AIC. Note degrees of freedom k = 6 (x,y,dmax,dmin,angle,intensity) + 1 for noise. log likelihood is L = - n log( <rss> )
-                                                                                  !        Note: scale rss by std dev of background to compare between different images.
+                                                                                    !        Note: scale rss by std dev of background to compare between different images.
                 if ((npx==0).or.(sigma==0)) then
                     this%q(ii) = huge(1.0d0) !in case there are no valid pixels or somethoing has gone wrong with sigmna calc.
                 else
@@ -681,7 +692,7 @@ module Lib_MultipleGaussians2d
             
             return
         end subroutine findQ            
-         
+            
         
         subroutine groupSpots( this, Nx,Ny, group, nGroups )  
     !---^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -696,8 +707,8 @@ module Lib_MultipleGaussians2d
             logical             ::      ok
             logical,dimension(this%n,this%n)        ::      overlapMatrix
             logical,dimension(this%n)               ::      alreadyGrouped
-           
-              
+            
+                
         !       first decide which are highly correlated
             call orderByWeight( this )           
             overlapMatrix = .false.
@@ -708,7 +719,7 @@ module Lib_MultipleGaussians2d
                     overlapMatrix(ii,jj) = overlapMatrix(jj,ii)
                 end do
             end do
-                                   
+                                    
         !       now can choose groups of gaussians which are safe to fit together.
             do ii = 1,this%n
                 alreadyGrouped(ii) = ignore(this,ii)                !   neat trick: say the ignored spots are grouped.
@@ -741,7 +752,7 @@ module Lib_MultipleGaussians2d
                     end if
                 end do
             end do
-             
+                
             if (LIB_MG2D_DBG) then
                 print *,"Lib_MultipleGaussians2d::fit0 info - ",nGroups," groups"
                 do ii = 1,nGroups
@@ -750,7 +761,7 @@ module Lib_MultipleGaussians2d
                 end do
                 print *,""            
             end if
-              
+                
             return
         end subroutine groupSpots
         
@@ -774,8 +785,6 @@ module Lib_MultipleGaussians2d
             integer             ::      nGroups,nInGroup
             real(kind=real64)   ::      rss,oldrss
             
-            integer,parameter           ::      NLOOPS = 100
-            real(kind=real64),parameter ::      TOL = 1.0d-4
             type(MultipleGaussians2d)      ::      mg2d_group
             real(kind=real64),dimension(:,:),allocatable   ::      img_tmp
             
@@ -790,9 +799,9 @@ module Lib_MultipleGaussians2d
                 call report(this)
             end if
 
-            do jj = 1,NLOOPS     
-                          
-                                       
+            do jj = 1,LIB_G2D_NLOOPS     
+                            
+                                        
                 if (jj==1) oldrss = 2*rss     
                 if (LIB_MG2D_DBG) print *,"Lib_MultipleGaussians2d::fit_groups info - loop ",jj," rss ",rss,count(img/=LIB_G2D_IGNORE)
                 
@@ -800,8 +809,9 @@ module Lib_MultipleGaussians2d
                     nInGroup = group(0,kk)                    !   number of spots in group 
                     if (LIB_MG2D_DBG) print *,"Lib_MultipleGaussians2d::fit_groups info - relaxing group ",kk," ( nSpots = ",nInGroup," )"
                     
-                !---    generate a copy of the image with all peaks not in group deleted          
-                    mm = 0                                  !   number of spots to fit in the group. 
+                !---    generate a copy of then spots containing only those in the group, mg2d_group
+                !       and delete all spots not in group from the image 
+                    mm = 0                                  !   number of spots in the group, mm = 1,2,..nInGroup
                     img_tmp = img
                     do ii = 1,this%n                        !   i is gaussian number  
                         if (ignore(this,ii)) cycle                             
@@ -813,29 +823,28 @@ module Lib_MultipleGaussians2d
                         end if
                     end do
                     mg2d_group%n = mm
-                    img_tmp = max(0.0d0,img_tmp)
                     
                 !---    fit remainder 
                     call refine_group( mg2d_group, img_tmp, rss )     !   note: rss here is the fit of the group to the image with the reset subtracted. It shouldn't be compared to the total fit.                
                     
                     
-                !---    extract
+                !---    extract the spots in the group. Update this with the fitted spots in the group
                     mm = 0
-                    do ii = 1,this%n                    !   i is gaussian number    
-                        if (ignore(this,ii)) cycle                    
+                    do ii = 1,this%n                                    !   ii is spot number    
+                        if (ignore(this,ii)) cycle                      !   I didn't fit this spot, so don't update it.
                         if (any(group(1:nInGroup,kk) == ii)) then
                             mm = mm + 1
                             this%g(ii) = Gaussian2d_ctor( getDat( mg2d_group%g( mm ) ) )     
                         end if
                     end do
-                                                 
+                                                    
                 end do
                 
             !---    are we done?
                 if (LIB_MG2D_DBG) call report(this)   
                 rss = getRss( this,img )
                 
-                if (abs(rss-oldrss)<rss*TOL) exit
+                if (abs(rss-oldrss)<rss*LIB_G2D_TOL) exit
                 if (rss>oldrss) exit 
                 oldrss = rss
                 if (LIB_MG2D_DBG) print *,""
@@ -844,15 +853,27 @@ module Lib_MultipleGaussians2d
             call delete(mg2d_group)
             
         !---    set the weights of the spots in this        
-            do ii = 1,this%n
-                if (ignore(this%g(ii))) then
-                    this%w(ii) = -1
-                else
-                    this%w(ii) = weight( this%g(ii)  )    
-                end if
-            end do
             
-                  
+            ! do ii = 1,this%n
+            !     if (ignore( this%g(ii),d=max(Nx,Ny) )) then             !   don't allow spots with radius>img size
+            !         this%w(ii) = IGNORE_MY_WEIGHT
+            !     else
+            !         this%w(ii) = weight( this%g(ii)  )    
+            !     end if
+            ! end do
+            
+            mm = 0
+            do ii = 1,this%n
+                if (.not. ignore( this%g(ii),d=(max(Nx,Ny)*LIB_G2D_MAX_DIAM) )) then             !   don't allow spots with radius>img size
+                    mm = mm + 1
+                    this%w(mm) = weight( this%g(ii)  )    
+                    this%g(mm) = Gaussian2d_ctor( getDat( this%g( ii ) ) )     
+                else if (LIB_MG2D_DBG) then
+                    print *,"Lib_MultipleGaussians2d::fit_groups info - ignoring spot ",ii
+                end if
+            end do            
+            this%n = mm
+                    
             if (LIB_MG2D_DBG) then
                 rss = getRss( this,img )  
                 print *,"Lib_MultipleGaussians2d::fit_groups info - end of fitting rss = ",rss
@@ -860,7 +881,16 @@ module Lib_MultipleGaussians2d
 
             return            
         end subroutine fit_groups
-
+        
+        
+        
+        
+        
+            
+        
+        
+        
+        
         subroutine refine_group( this, img, rss )  
     !---^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
     !*      fit a subgroup of the gaussians to the image.
@@ -883,11 +913,15 @@ module Lib_MultipleGaussians2d
             real(kind=real64)                               ::      x1,x2,x3,y1,y2,y3,xx
             type(GoldenSection)                             ::      gold
             logical                                         ::      isConverged,isWithinTimeLimit
-            integer,parameter           ::      NLOOPS = 100
-            real(kind=real64),parameter ::      TOL = 1.0d-8
+
+            !        real(kind=real64),dimension(6)  ::      drss_1
+            !       real(kind=real64)               ::      rss_1
+
+            ! integer,parameter           ::      LIB_G2D_NLOOPS = 200
+            ! real(kind=real64),parameter ::      LIB_G2D_TOL = 1.0d-10
             Nx = size(img,dim=1)
             Ny = size(img,dim=2)
- 
+    
             
             
         !---    allocate memory and remove peaks not part of initial fitting
@@ -895,37 +929,52 @@ module Lib_MultipleGaussians2d
             allocate(drss(6,this%n))
             
             if (LIB_MG2D_DBG) then
-                print *,"Lib_MultipleGaussians2d::refine_group info - relaxing group of ",this%n," spots"
-                call report(this)
+                print *,"Lib_MultipleGaussians2d::refine_group info - relaxing group of ",this%n," spots in "
+                !call report(this,6,o=4)
             end if
-                 
+                    
             
         !---    find derivatives wrt each gaussian             
-            do jj = 1,NLOOPS
+            do jj = 1,LIB_G2D_NLOOPS
             
-                dat = getDat(this)               
+                ! if (LIB_MG2D_DBG) then
+                !     print *,"Lib_MultipleGaussians2d::refine_group info - loop ",jj
+                !     !call report(this,6,o=4)
+                ! end if
+
+                
                 call findDrss( this,img, rss,drss ) 
                 
                 if (jj==1) then
-                    oldrss = 2*rss                
-                    !ff = getRss( getDat(this),img,mode=LIB_DRAWELLIPSE_SHADE_GAUSSIAN)
+                    oldrss = 2*rss                                    
                     if (LIB_MG2D_DBG)  print *,"Lib_MultipleGaussians2d::refine_group info - initial rss ",rss,count(img/=LIB_G2D_IGNORE)
+                    !if (LIB_MG2D_DBG)  print *,"Lib_MultipleGaussians2d::refine_group info - deriv(1) ",drss(:,1)
                 end if
     
-                if (mod(jj,2)==0) drss(4:6,:) = 0.0d0
+                if (mod(jj,3)==1) then
+                    drss(4:6,:) = 0.0d0
+                else if (mod(jj,3)==2) then
+                    drss(1:3,:) = 0.0d0
+                end if
                 
                 ff = 0
                 do ii = 1,this%n
                     ff = ff + dot_product(drss(:,ii),drss(:,ii))
-                    if (LIB_MG2D_DBG) write(*,fmt='(a,i6,a,6f16.6)') "Lib_MultipleGaussians2d::refine_group dbg - drss(",ii," ) = ",drss(:,ii)
+                    ! if (LIB_MG2D_DBG) then
+                    !     write(*,fmt='(a,i6,a,6f16.6)') "Lib_MultipleGaussians2d::refine_group dbg - drss(",ii," ) = ",drss(:,ii)                  
+                    !     ! call findDrss( getDat(this,ii),img,LIB_DRAWELLIPSE_SHADE_GAUSSIAN,rss_1,drss_1 )
+                    !     ! print *,"single gaussian drss ",rss_1,drss_1
+                    ! end if
+    
                 end do
-                if (abs(ff)<1.0d-8) exit !  there is no gradient - and so there is no "steepest descent" left to do!
-                 
+                if (abs(ff)<1.0d-16) exit !  there is no gradient - and so there is no "steepest descent" left to do!
+                    
                 if (LIB_MG2D_DBG) print *,"Lib_MultipleGaussians2d::refine_group dbg - loop ",jj," |drss|^2 = ",ff," |rss| ",rss
 
                 
             !---    I have little or no idea how to bound the search, only that the direction is drss
             !       Here's a terrible guess, based on the magnitude of the error to recover...   
+                dat = getDat(this)               
                 x1 = -0.001*rss/ff
                 call setDat(this,dat+x1*drss)
                 y1 = getRss( this,img )
@@ -935,7 +984,7 @@ module Lib_MultipleGaussians2d
 
                 x3 = +0.001*rss/ff
                 call setDat(this,dat+x3*drss) ; y3 = getRss( this,img )
-                 
+                    
 
 
             !   ... and now lets check it is a bound, and that I genuinely end up with x1<x2<x3 and y2<min(y1,y3)
@@ -964,6 +1013,7 @@ module Lib_MultipleGaussians2d
                         exit
                     end if
                 end do
+                !if (LIB_MG2D_DBG) print *,"x1,x2,x3 = ",x1,x2,x3
 
             !   OK, at this point I should be reasonably confident that (x1,y1) and (x3,y3) are good bounds
                 gold = GoldenSection_ctor( x1,x3, y1,y3)
@@ -981,13 +1031,16 @@ module Lib_MultipleGaussians2d
                 
                 call setDat(this,dat+x2*drss) 
                 rss = getRss( this,img )    
-                 
+                    
                 
-                if (abs(rss-oldrss)<rss*TOL) exit
+                if (abs(rss-oldrss)<rss*LIB_G2D_TOL) exit
                 oldrss = rss
                 
             end do
-            if (LIB_MG2D_DBG) print *,"Lib_MultipleGaussians2d::refine_group info - end of fit ",rss
+            if (LIB_MG2D_DBG) then
+                !call findDrss( this,img, xx,drss ) 
+                print *,"Lib_MultipleGaussians2d::refine_group info - end of fit rss ",rss!,xx
+            end if
             
             return
         end subroutine refine_group
@@ -1045,16 +1098,13 @@ module Lib_MultipleGaussians2d
         
         
         
-        !pure 
         real(kind=real64) function getRss0( this,img )
-    !---^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    !---^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
     !*      given the input density function, return the residual sum of squares 
             type(MultipleGaussians2d),intent(in)                    ::      this
-            real(kind=real64),dimension(0:,0:),intent(in)           ::      img
-                        
-            
-            getRss0 = getRss( getDat(this),img,mode=LIB_DRAWELLIPSE_SHADE_GAUSSIAN)
-            
+            real(kind=real64),dimension(0:,0:),intent(in)           ::      img                                               
+            getRss0 = getRss( getDat(this),img,mode=LIB_DRAWELLIPSE_SHADE_GAUSSIAN )
+
             return
         end function getRss0
         
@@ -1065,13 +1115,14 @@ module Lib_MultipleGaussians2d
     !*      return the first derivatives of the residual sum of squares with respect to change of parameters
     !*      for each spot, the derivative ordering is 
     !*      ( x0,y0,f0,Dxx,Dxy,Dyy )
-            type(MultipleGaussians2d),intent(in)            ::      this
+            type(MultipleGaussians2d),intent(inout)         ::      this
             real(kind=real64),dimension(0:,0:),intent(in)   ::      img
             real(kind=real64),intent(out)                   ::      rss
             real(kind=real64),dimension(:,:),intent(out)    ::      drss           !    (6,this%n) 
                         
 
             call findDrss( getDat(this),img,LIB_DRAWELLIPSE_SHADE_GAUSSIAN,rss,drss )
+    
             
             return
         end subroutine findDrss0
@@ -1134,10 +1185,10 @@ module Lib_MultipleGaussians2d
         
         
         pure subroutine set0(this,dat)
-    !---^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    !*      construct gaussian from 6 parameters in order ( x0,y0,f0,Dxx,Dxy,Dyy )
+    !---^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    !*      construct gaussian from 6 parameters in order ( x0,y0,f0,Dxx,Dxy,Dyy ) + background level
     !*      note: does not set weights - use full constructor for that 
-            type(MultipleGaussians2d),intent(inout)                 ::      this
+            type(MultipleGaussians2d),intent(inout)            ::      this
             real(kind=real64),dimension(:,:),intent(in)        ::      dat
             integer             ::      ii,nn
             
@@ -1156,7 +1207,7 @@ module Lib_MultipleGaussians2d
     
         pure subroutine set1(this,i,dat)
     !---^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    !*      construct gaussian from 6 parameters in order ( x0,y0,f0,Dxx,Dxy,Dyy )
+    !*      set a single gaussian from 6 parameters in order ( x0,y0,f0,Dxx,Dxy,Dyy )
     !*      note: does not set weights - use full constructor for that 
             type(MultipleGaussians2d),intent(inout)                 ::      this
             integer,intent(in)                                      ::      i
@@ -1182,7 +1233,7 @@ module Lib_MultipleGaussians2d
             getX0 = this%g(i)%x0
             return
         end function getX0 
-               
+                
         pure real(kind=real64) function getY0(this,i) 
     !---^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
             type(MultipleGaussians2d),intent(in)        ::      this
@@ -1363,6 +1414,8 @@ module Lib_MultipleGaussians2d
         subroutine add0(this,that)  
     !---^^^^^^^^^^^^^^^^^^^^^^^^^^
     !*      add the contents of that into this
+    !*      take care with this - note it does not change the background level
+    !*      this routine is used for collecting a "final" set of gaussians
             type(MultipleGaussians2d),intent(inout)     ::      this
             type(MultipleGaussians2d),intent(in)        ::      that
             
@@ -1389,46 +1442,9 @@ module Lib_MultipleGaussians2d
             return
         end subroutine add0        
         
-        
-
-        subroutine subtract0( img,this )
-    !---^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    !*      remve this gaussian from the image
-            type(MultipleGaussians2d),intent(in)                         ::  this
-            real(kind=real64),dimension(0:,0:),intent(inout)    ::  img
-
-            integer             ::      Nx,Ny
-            integer             ::      ix,iy,ii
-            real(kind=real64)   ::      ff,gg,xx,yy
-            
-            Nx = size(img,dim=1)
-            Ny = size(img,dim=2)
-            
-            do iy = 0,Ny-1
-                do ix = 0,Nx-1
-                    ff = img(ix,iy)
-                    if (ff == LIB_G2D_IGNORE) cycle
-                    do ii = 1,this%n
-                        if (ignore(this,ii)) cycle
-                        xx = (ix-this%g(ii)%x0)
-                        yy = (iy-this%g(ii)%y0)
-                        gg = this%g(ii)%Dxx*xx*xx + 2*this%g(ii)%Dxy*xx*yy + this%g(ii)%Dyy*yy*yy
-                        !if (gg > 4.5d0) cycle           !   only consider up to 3 sigma.
-                        if (gg > LIB_G2D_SEARCH_RANGE**2/2) cycle !standardised search range
-                        gg = Exp( - gg )                        
-                        ff = ff - this%g(ii)%f0 * gg
-                    end do
-                    img(ix,iy) = ff !- gg
-                end do
-            end do
-            
-            return
-        end subroutine subtract0
-            
-
         subroutine add1( img,this )
-    !---^^^^^^^^^^^^^^^^^^^^^^^^^^ 
-    !*      add this gaussian to the image
+    !---^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+    !*      add all the gaussians to the image
             type(MultipleGaussians2d),intent(in)                         ::  this
             real(kind=real64),dimension(0:,0:),intent(inout)    ::  img
 
@@ -1460,55 +1476,60 @@ module Lib_MultipleGaussians2d
             return
         end subroutine add1
             
-             
+        !*
+        
 
+        subroutine subtract0( img,this )
+    !---^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    !*      remove all gaussian from the image
+            type(MultipleGaussians2d),intent(in)                ::  this
+            real(kind=real64),dimension(0:,0:),intent(inout)    ::  img
+
+            integer             ::      Nx,Ny
+            integer             ::      ix,iy,ii
+            real(kind=real64)   ::      ff,gg,xx,yy
             
-        logical function ignore0( this , q,t )
-    !---^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-            type(Gaussian2d),intent(in)             ::      this
-            real(kind=real64),intent(in),optional   ::      q,t
-            real(kind=real64)       ::      ee,dmaj,dmin,theta
+            Nx = size(img,dim=1)
+            Ny = size(img,dim=2)
             
+            do iy = 0,Ny-1
+                do ix = 0,Nx-1
+                    ff = img(ix,iy)
+                    if (ff == LIB_G2D_IGNORE) cycle
+                    do ii = 1,this%n
+                        if (ignore(this,ii)) cycle
+                        xx = (ix-this%g(ii)%x0)
+                        yy = (iy-this%g(ii)%y0)
+                        gg = this%g(ii)%Dxx*xx*xx + 2*this%g(ii)%Dxy*xx*yy + this%g(ii)%Dyy*yy*yy
+                        !if (gg > 4.5d0) cycle           !   only consider up to 3 sigma.
+                        if (gg > LIB_G2D_SEARCH_RANGE**2/2) cycle !standardised search range
+                        gg = Exp( - gg )                        
+                        ff = ff - this%g(ii)%f0 * gg
+                    end do
+                    img(ix,iy) = ff !- gg
+                end do
+            end do
             
-            ee = eccentricity(this)
-            call findSigmaAndAngle( this,dmaj,dmin,theta )
-            
-            ignore0 = (ee>E_THRESH) 
-            ignore0 = ignore0 .or. ((dmaj*2)<DIAM_THRESH) !double to conver to diameter                        
-            ignore0 = ignore0 .or. (this%f0<DETECTFMIN) 
-            ignore0 = ignore0 .or. ( this%Dxx*this%Dyy < this%Dxy*this%Dxy )
-            if (present(q)) ignore0 = ignore0 .or. (q>Q_THRESH)
-            if (present(t)) ignore0 = ignore0 .or. (t<T_THRESH)
-            
-            
-            
-            if (LIB_MG2D_DBG) then
-                print *," eccentricity ",ee                                     ," > e_thresh    (",E_THRESH,   ")?  ",(ee>E_THRESH)
-                print *," intensity    ",this%f0                                ," < DETECTFMIN  (",DETECTFMIN, ")?  ",(this%f0<DETECTFMIN)
-                print *," Major diam   ",dmaj                                   ," > DIAM_THRESH (",DIAM_THRESH,")?  ",(dmaj<DIAM_THRESH)
-                if (present(q)) print *," q            ",q                      ," > Q_THRESH ?  (",Q_THRESH,   ")?  ",(q>Q_THRESH)
-                if (present(t)) print *," t            ",q                      ," < T_THRESH ?  (",T_THRESH,   ")?  ",(t<T_THRESH)
-                print *," det[D]       ",this%Dxx*this%Dyy - this%Dxy*this%Dxy  ," < 0?          ",( this%Dxx*this%Dyy < this%Dxy*this%Dxy )
-                print *," ignore?      ",ignore0
-            end if
             return
-        end function ignore0
+        end subroutine subtract0
             
+    
         
         elemental logical function ignore1( this,i )
     !---^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
             type(MultipleGaussians2d),intent(in)        ::      this
             integer,intent(in)                          ::      i
-            ignore1 = (this%w(i)<0)
+            ignore1 = .not. (this%w(i)>0)         !   A positive weight means don't ignore. Cf IGNORE_MY_WEIGHT = -1.0
             return
         end function ignore1
             
         subroutine setIgnore( this )
     !---^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    !*      sets the gaussians to be ignored based on their quality and t* value.
             type(MultipleGaussians2d),intent(inout)     ::      this
             integer     ::      ii
             do ii = 1,this%n
-                if ( ignore0( this%g(ii) , this%q(ii) , this%t(ii)) ) this%w(ii) = -1.0d0
+                if ( ignore( this%g(ii) , q=this%q(ii) , t=this%t(ii) ) ) this%w(ii) = IGNORE_MY_WEIGHT
             end do
             return
         end subroutine setIgnore
@@ -1518,7 +1539,7 @@ module Lib_MultipleGaussians2d
     !*      given the input density function, find the log likelihood         
     !*          lambda = - n log (rss/n)
     !*      and return the AIC
-    !*          aic = 2*( 6*N + 1 - lambda )
+    !*          aic = 2*( 6*N + 2 - lambda )        !   + 1 for noise term and +1 for background level
     !*      where N is number of gaussian spots
             type(MultipleGaussians2d),intent(in)            ::      this
             real(kind=real64),dimension(0:,0:),intent(in)   ::      img
@@ -1526,8 +1547,9 @@ module Lib_MultipleGaussians2d
             integer                 ::      kk      !   number of parameters
             integer                 ::      nn      !   sample size
             real(kind=real64)       ::      rss
+
         !---    count degrees of freedom
-            kk = 6*this%n + 1           !   + 1 for noise term
+            kk = 6*this%n + 2           !   + 1 for noise term and +1 for background level
 
         !---    count the number of pixels over which the rss is computed
             nn = count( img /= LIB_G2D_IGNORE )
@@ -1557,36 +1579,7 @@ module Lib_MultipleGaussians2d
             return
         end function aic_value
 
-        
-        real(kind=real64) function loglikelihood0( this,img )
-    !---^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    !*      given the input density function, return the log likelihood ( ignoring the noise term )
-    !*      lambda = - n log (rss/n)
-            type(MultipleGaussians2d),intent(in)            ::      this
-            real(kind=real64),dimension(0:,0:),intent(in)   ::      img
-             
-            real(kind=real64)   ::      rss
-            integer             ::      npx  
             
-        !---    count the number of pixels over which the rss is computed
-            npx = count( img /= LIB_G2D_IGNORE )
-
-        !---    quick escape?
-            loglikelihood0 = 0
-            if (npx==0) return
-            
-
-        !---    find the residual sum of squares
-            rss = getRss0( this,img )
-
-        !---    return the log-likelihood
-            loglikelihood0 = - npx * log( rss / npx )
-
-
-            
-            return
-        end function loglikelihood0
-
 
 
         subroutine setLib_MultipleGaussians2d_dbg(dbg) 
@@ -1595,15 +1588,6 @@ module Lib_MultipleGaussians2d
             LIB_MG2D_DBG = dbg
             return
         end subroutine setLib_MultipleGaussians2d_dbg
-
-        subroutine ignore_individual_guassian(this,ii) 
-            !---^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-            !sets the weigth of an individual gaussian to -1 so various functions ignore it.
-            type(MultipleGaussians2d),intent(inout)             ::      this
-            integer,intent(in)                         ::       ii
-            this%w(ii)=-1.0d0
-            return
-        end subroutine ignore_individual_guassian
-                
+    
         
     end module Lib_MultipleGaussians2d        

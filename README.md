@@ -44,6 +44,14 @@ NB: to compile for debugging (assumes you have compiled already, if not remove t
 
 There are debug config files in .vscode/launch.json for those who want to use vscode's interactive debugger.
 
+To compile with open MPI, add the CMAKE option -DCMAKE_Fortran_COMPILER=mpifort to the cmake stage, e.g. for the previous example:
+
+    >   cd build
+    >   make clean
+    >   cmake -DCMAKE_Fortran_COMPILER=mpifort -DCMAKE_BUILD_TYPE=Debug ..
+    >   make
+
+
 ## To test
 
     >   cd build
@@ -65,7 +73,19 @@ where NameOfTest is is defined by the NAME property in add_test called in the /t
     >   cd build
     >   ctest -L SHORT
 
-Note: for vscode users there is launch.json in /.vscode that contains launch configurations if you want to use vscode's debugger.
+- To generate a test coverage report, first build for coverage from the /build directory:
+
+    >   cmake ../. -DCMAKE_BUILD_TYPE=Coverage
+    >   make clean; make
+
+- Note, if using open MPI it must be includeD WHEN CALLING CMAKE
+
+    >   cmake ../. -DCMAKE_BUILD_TYPE=Coverage -DCMAKE_Fortran_COMPILER=mpifort
+    >   make clean; make
+
+- Then run the tests and generate the report with:
+
+    >   ctest -T Test -T Coverage
 
 Some users have reported tests failing due to windows end of line character being inserted into shell scripts. Error messages may look like:
 - $'\r': command not found

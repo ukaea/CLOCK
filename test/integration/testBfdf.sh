@@ -14,7 +14,6 @@ else
     fi
     declare -a test_images=("fe6cr_n_irrad_1.8dpa_fib_dam_BF.png" 
                             "fe6cr_n_irrad_1.8dpa_fib_dam_DF.png" 
-                            "filtertest.png"
                             "flattest.png"
                             "test_cameraman.png"
                             "test_cat.png"

@@ -59,6 +59,7 @@
 
 
 
+        use Lib_SafeExp
         use Lib_ColourScale
         use iso_fortran_env
         implicit none
@@ -77,8 +78,8 @@
         integer,public,parameter                ::      LIB_DRAWELLIPSE_IOU_CIRCLE     = 2
         integer,public,parameter                ::      LIB_DRAWELLIPSE_IOU_ELLIPSE    = 3
 
-
-        real(kind=real64),public                ::      LIB_DRAWELLIPSE_GAUSSMULT = 5           !   draw gaussian to 5 std devs, lower to 2 if fitting real micrographs (don't want to pick up other features)
+        logical,public                          ::      LIB_DRAWELLIPSE_RSS_REMOVE_BG = .true.
+        real(kind=real64),public                ::      LIB_DRAWELLIPSE_GAUSSMULT = 5           !   draw gaussian to 5 std devs
         real(kind=real64),public                ::      LIB_DRAWELLIPSE_RINGWIDTH = 1.0d0       !   draw ring with 1 pixel width
         
 
@@ -673,7 +674,7 @@
                         xx = ii - x0
                         cc = xx*xx*D(1,1) + 2*xx*yy*D(1,2) + yy*yy*D(2,2)
                         if (cc <= mult_*mult_/2) then
-                            cc = exp(-cc)                    
+                            cc = safeExp(-cc)                    
                             img(ii,jj) = cc
                             dellipse(1,ii,jj) = 2*cc*( D(1,1)*xx + D(1,2)*yy )          !    = d f/d x0 
                             dellipse(2,ii,jj) = 2*cc*( D(1,2)*xx + D(2,2)*yy )          !    = d f/d y0  
@@ -690,7 +691,7 @@
                     do ii = -nx,nx
                         xx = ii - x0
                         cc = xx*xx*D(1,1) + 2*xx*yy*D(1,2) + yy*yy*D(2,2)
-                        if (cc <= mult_*mult_/2) img(ii,jj) = exp(-cc)                        
+                        if (cc <= mult_*mult_/2) img(ii,jj) = safeExp(-cc)                        
                     end do
                 end do     
             end if
@@ -746,7 +747,7 @@
                     cc = xx*xx*D(1,1) + 2*xx*yy*D(1,2) + yy*yy*D(2,2)
                     cc = ss*(sqrt(2*cc) - 1.0d0)                    
                     if (abs(cc) <= 2.0d0) then
-                        img_square(ii,jj) = exp( - cc*cc/2  )
+                        img_square(ii,jj) = safeExp( - cc*cc/2  )
                         nx = max(abs(ii),nx)                !   illuminated pixel furthest along x-direction 
                         ny = max(abs(jj),ny)                     !   illuminated pixel furthest along y-direction                         
                     end if
@@ -824,7 +825,7 @@
                     if (cc < 0) then
                         img_square(ii,jj) = 1.0d0
                     else if (cc <= 2.0d0) then
-                        img_square(ii,jj) = exp( - cc*cc/2 )
+                        img_square(ii,jj) = safeExp( - cc*cc/2 )
                         nx = max(abs(ii),nx)                !   illuminated pixel furthest along x-direction 
                         ny = max(abs(jj),ny)                     !   illuminated pixel furthest along y-direction                         
                     end if
@@ -859,7 +860,7 @@
     !*          rss = sum_i ( g_i - f_i )^2
     !*      between an input image "ground truth" g_i = img(x,y) and its representation as a 2d gaussian
     !*      defined by
-    !*          f(x,y) = f0 Exp[ - (x-x0,y-y0).D (x-x0,y-y0) ]
+    !*          f(x,y) = f0 safeExp[ - (x-x0,y-y0).D (x-x0,y-y0) ]
     !*      Some pixels will be ignored, marked up with the special code LIB_RSS_IGNORE
     !*      The ordering of the input data array and output derivatives 
     !*          [ x0,y0,f0,Dxx,Dxy,Dyy ]            
@@ -872,8 +873,8 @@
                         
             integer             ::      Nx,Ny
             integer             ::      i0,j0               !   pixel at centre of ellipse
-            integer             ::      ix,iy
-            real(kind=real64)   ::      ss,xx,yy,gg,mult_
+            integer             ::      ix,iy,dx,npx
+            real(kind=real64)   ::      ss,xx,yy,gg,mult_,bg
             real(kind=real64)   ::      Dxx,Dxy,Dyy
              
         
@@ -895,19 +896,34 @@
                     Dxx = ellipse(4)
                     Dxy = ellipse(5)
                     Dyy = ellipse(6)
-                    ! call findBoundingBox(reshape((/Dxx,Dxy,Dxy,Dyy/),(/2,2/)),dx,mult_)                    
-                    ! do iy = max(0,j0-dx),min(Ny-1,j0+dx)
-                    !     yy = iy - ellipse(2)
-                    !     do ix = max(0,i0-dx),min(Nx-1,i0+dx)
-                                    
+
+                !---    compute background level
+                    bg = 0
+                    if (LIB_DRAWELLIPSE_RSS_REMOVE_BG) then
+                        npx = 0
+                        do iy = 0,Ny-1
+                            yy = iy - ellipse(2)
+                            do ix = 0,Nx-1                    
+                                if ( img_in(ix,iy) == LIB_DRAWELLIPSE_IGNORE ) cycle
+                                xx = ix - ellipse(1)
+                                gg = xx*xx*Dxx + 2*xx*yy*Dxy + yy*yy*Dyy
+                                if ( gg < -10.0d0 ) cycle   !   gg should be positive, so this must mean a very bad gaussian
+                                gg = safeExp( - gg )
+                                ss = ellipse(3) * gg - img_in(ix,iy) 
+                                bg = bg + ss
+                                npx = npx + 1
+                            end do
+                        end do
+                        bg = bg / max(1,npx)                    
+                    end if
+
                     do iy = 0,Ny-1
                         yy = iy - ellipse(2)
                         do ix = 0,Nx-1
                             if ( img_in(ix,iy) == LIB_DRAWELLIPSE_IGNORE ) cycle
                             xx = ix - ellipse(1)
                             gg = xx*xx*Dxx + 2*xx*yy*Dxy + yy*yy*Dyy
-                            !if ( 2*gg > mult_*mult_ ) cycle
-                            gg = ellipse(3) * exp( - gg )
+                            gg = bg + ellipse(3) * safeExp( - gg )
                             if ( gg < -10.0d0 ) cycle   !   gg should be positive, so this must mean a very bad gaussian
                             ss = img_in(ix,iy) - gg
                             getRss0 = getRss0 + ss*ss
@@ -928,8 +944,6 @@
     !*      compute the residual sum of squares
     !*          rss = sum_i ( g_i - f_i )^2
     !*      between an input image "ground truth" g_i = img(x,y) and its representation as a sum over 2d gaussians
-    !*      The ordering of the input data array and output derivatives 
-    !*          [ x0,y0,f0,Dxx,Dxy,Dyy ]            
     !*      note: this is the multi-ellipse version of getRss0
 
           
@@ -940,8 +954,8 @@
 
             integer             ::      Nx,Ny
             integer             ::      i0,j0               !   pixel at centre of ellipse
-            integer             ::      ix,iy,ii
-            real(kind=real64)   ::      ss,xx,yy,gg,mult_
+            integer             ::      ix,iy,dx,ii,npx
+            real(kind=real64)   ::       ss,xx,yy,gg,mult_,bg,ff,zz
             real(kind=real64)   ::      Dxx,Dxy,Dyy
             real(kind=real64),dimension(:,:),allocatable        ::      img_ell
         
@@ -956,42 +970,44 @@
                 case (LIB_DRAWELLIPSE_SHADE_GAUSSIAN)                    
                     mult_ = LIB_DRAWELLIPSE_GAUSSMULT; if (present(mult)) mult_ = mult
                     allocate(img_ell(0:Nx-1,0:Ny-1))
+                    
+
+                !---    find the image difference
                     img_ell = img_in
-                    do ii = 1,size(ellipse,dim=2)
-                        
-                    !---    find the pixel centre of the ellipse
-                        i0 = floor(ellipse(1,ii))
-                        j0 = floor(ellipse(2,ii))
-                        Dxx = ellipse(4,ii)
-                        Dxy = ellipse(5,ii)
-                        Dyy = ellipse(6,ii)
-                        ! call findBoundingBox(reshape((/Dxx,Dxy,Dxy,Dyy/),(/2,2/)),dx,mult_)
-                        
-                        ! do iy = max(0,j0-dx),min(Ny-1,j0+dx)
-                        !     yy = iy - ellipse(2,ii)
-                        !     do ix = max(0,i0-dx),min(Nx-1,i0+dx)
-                        do iy = 0,Ny-1
-                            yy = iy - ellipse(2,ii)
-                            do ix = 0,Nx-1
-                                if ( img_in(ix,iy) == LIB_DRAWELLIPSE_IGNORE ) cycle
-                                xx = ix - ellipse(1,ii)
+                    bg = 0.0d0      !   background level: bg = sum_i (img_i - (sum g)_i )  then will be divided by n
+                    npx = 0                   
+                    ss = 0          !   ss = sum_i (img_i - (sum g)_i )^2
+                    do iy = 0,Ny-1                        
+                        do ix = 0,Nx-1
+                            zz = img_ell(ix,iy)     !       will compute zz = img_i - (sum g)_i
+                            if ( zz == LIB_DRAWELLIPSE_IGNORE ) cycle
+
+                            do ii = 1,size(ellipse,dim=2)                    
+                                xx  = ix - ellipse(1,ii)
+                                yy  = iy - ellipse(2,ii)
+                                ff  = ellipse(3,ii)
+                                Dxx = ellipse(4,ii)
+                                Dxy = ellipse(5,ii)
+                                Dyy = ellipse(6,ii)
                                 gg = xx*xx*Dxx + 2*xx*yy*Dxy + yy*yy*Dyy
-                                !if ( gg*2 > mult_*mult_ ) cycle
-                                if ( gg < -10.0d0 ) cycle   !   gg should be positive, so this must mean a very bad gaussian
-                                gg = ellipse(3,ii) * exp( - gg )
-                                img_ell(ix,iy) = img_ell(ix,iy) - gg
+                                !if ( gg < -10.0d0 ) cycle   !   gg should be positive, so this must mean a very bad gaussian                                
+                                zz = zz - ff * safeExp( - gg )
                             end do
+                            img_ell(ix,iy) = zz             !   put back 
+                            bg = bg + zz          
+                            npx = npx + 1
+                            ss = ss + zz*zz
                         end do                 
 
                     end do
-
-                    do iy = 0,Ny-1
-                        do ix = 0,Nx-1
-                            if ( img_in(ix,iy) == LIB_DRAWELLIPSE_IGNORE ) cycle
-                            ss = img_ell(ix,iy)
-                            getRss1 = getRss1 + ss*ss
-                        end do
-                    end do             
+                    if (LIB_DRAWELLIPSE_RSS_REMOVE_BG) then
+                        bg = bg / max(1,npx)                !   bg = sum_i (img_i - (sum g)_i ) / n
+                        getRss1 = ss - npx*bg*bg            !   = sum_i (img_i - (sum g)_i - bg)^2 
+                                                            !   = sum_i (img_i - (sum g)_i )^2 - 2 bg sum_i (img_i - (sum g)_i )  + sum_i bg^2
+                                                            !   = sum_i (img_i - (sum g)_i )^2 - n bg^2 
+                    else
+                        getRss1 = ss
+                    end if
 
                 case (LIB_DRAWELLIPSE_SHADE_RING)
                     stop "Lib_DrawEllipse::getRss0 error - not coded for ring"
@@ -1010,7 +1026,7 @@
     !*          rss = sum_i ( g_i - f_i )^2
     !*      between an input image "ground truth" g_i = img(x,y) and its representation as a sum over 2d gaussians
     !*      defined by f_i = f(x,y) = 
-    !*          f(x,y) = f0 Exp[ - (x-x0,y-y0).D (x-x0,y-y0) ]
+    !*          f(x,y) = f0 safeExp[ - (x-x0,y-y0).D (x-x0,y-y0) ]
     !*      Some pixels will be ignored, marked up with the special code LIB_RSS_IGNORE
     !*      The ordering of the input data array and output derivatives 
     !*          [ x0,y0,f0,Dxx,Dxy,Dyy ]            
@@ -1022,24 +1038,21 @@
             real(kind=real64),intent(in),optional                   ::      mult
                         
             integer             ::      Nx,Ny
-            integer             ::      i0,j0               !   pixel at centre of ellipse
-            integer             ::      ix,iy
-            real(kind=real64)   ::      ss,xx,yy,gg,mult_
-            real(kind=real64)   ::      Dxx,Dxy,Dyy,f0
+            !integer             ::      i0,j0               !   pixel at centre of ellipse
+            integer             ::      ix,iy,dx,npx
+            real(kind=real64)   ::      ss,xx,yy,gg,mult_,bg,ff
+            real(kind=real64)   ::      Dxx,Dxy,Dyy
              
         
         !---    allocate an image for the gaussian
             Nx = size(img_in,dim=1)
             Ny = size(img_in,dim=2)
 
-
-        !---    find the pixel centre of the ellipse
-            i0 = floor(ellipse(1))
-            j0 = floor(ellipse(2))
+ 
 
             rss = 0.0d0
             drss = 0.0d0
-            f0=ellipse(3)
+            !f0=ellipse(3)
 
         !---    construct the image that will be added
             select case(mode)
@@ -1049,35 +1062,49 @@
                     Dxy = ellipse(5)
                     Dyy = ellipse(6)
 
-                    ! call findBoundingBox(reshape((/Dxx,Dxy,Dxy,Dyy/),(/2,2/)),dx,2*mult_)
+                 !---    compute background level
+                     bg = 0
+                     if (LIB_DRAWELLIPSE_RSS_REMOVE_BG) then
+                        npx = 0
+                        do iy = 0,Ny-1
+                            yy = iy - ellipse(2)
+                            do ix = 0,Nx-1                    
+                                if ( img_in(ix,iy) == LIB_DRAWELLIPSE_IGNORE ) cycle
+                                xx = ix - ellipse(1)
+                                gg = xx*xx*Dxx + 2*xx*yy*Dxy + yy*yy*Dyy
+                                if ( gg < -10.0d0 ) cycle   !   gg should be positive, so this must mean a very bad gaussian
+                                gg = safeExp( - gg )
+                                ss = ellipse(3) * gg - img_in(ix,iy) 
+                                bg = bg + ss
+                                npx = npx + 1
+                            end do
+                        end do
+                        bg = bg / max(1,npx)
+                    end if
                      
-                    ! do iy = max(0,j0-dx),min(Ny-1,j0+dx)
-                    !     yy = iy - ellipse(2)
-                    !     do ix = max(0,i0-dx),min(Nx-1,i0+dx)
-
+                    
                     do iy = 0,Ny-1
                         yy = iy - ellipse(2)
                         do ix = 0,Nx-1                    
-
                             if ( img_in(ix,iy) == LIB_DRAWELLIPSE_IGNORE ) cycle
                             xx = ix - ellipse(1)
-                            gg = xx*xx*Dxx + 2*xx*yy*Dxy + yy*yy*Dyy
-                            !if ( 2*gg > mult_*mult_ ) cycle
+                            gg = xx*xx*Dxx + 2*xx*yy*Dxy + yy*yy*Dyy                            
                             if ( gg < -10.0d0 ) cycle   !   gg should be positive, so this must mean a very bad gaussian
-                            gg = exp( - gg )
 
-                            ss = ellipse(3) * gg - img_in(ix,iy) 
+                            gg = safeExp( - gg )
                             
-
-                            drss(1) = drss(1) + 2*ss*( 2*gg*ellipse(3)*( Dxx*xx + Dxy*yy ) )         !    = d ss^2 /d x0 
-                            drss(2) = drss(2) + 2*ss*( 2*gg*ellipse(3)*( Dxy*xx + Dyy*yy ) )         !    = d ss^2 /d y0  
-                            drss(3) = drss(3) + 2*ss*( gg                                  )         !    = d ss^2 /d f0 
-                            drss(4) = drss(4) + 2*ss*( - gg*ellipse(3)*xx*xx               )         !    = d ss^2 /d Dxx
-                            drss(5) = drss(5) + 2*ss*( - 2*gg*ellipse(3)*xx*yy             )         !    = d ss^2 /d Dxy
-                            drss(6) = drss(6) + 2*ss*( - gg*ellipse(3)*yy*yy               )         !    = d ss^2 /d Dyy
-
-
+                            ff = ellipse(3)
+                            ss = bg + ff * gg - img_in(ix,iy) 
                             rss = rss + ss*ss
+
+                            drss(1) = drss(1) + 2*ss*( 2*gg*ff*( Dxx*xx + Dxy*yy ) )         !    = d ss^2 /d x0 
+                            drss(2) = drss(2) + 2*ss*( 2*gg*ff*( Dxy*xx + Dyy*yy ) )         !    = d ss^2 /d y0  
+                            drss(3) = drss(3) + 2*ss*( gg                          )         !    = d ss^2 /d f0 
+                            drss(4) = drss(4) + 2*ss*( -   gg*ff*xx*xx             )         !    = d ss^2 /d Dxx
+                            drss(5) = drss(5) + 2*ss*( - 2*gg*ff*xx*yy             )         !    = d ss^2 /d Dxy
+                            drss(6) = drss(6) + 2*ss*( -   gg*ff*yy*yy             )         !    = d ss^2 /d Dyy
+
+                            
                         end do
                     end do                 
                 case (LIB_DRAWELLIPSE_SHADE_RING)
@@ -1091,15 +1118,16 @@
         end subroutine findDrss0
 
         subroutine findDrss1( ellipse,img_in,mode,rss,drss,mult )
-    !---^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    !---^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     !*      compute the residual sum of squares
     !*          rss = sum_i ( g_i - f_i )^2
     !*      between an input image "ground truth" g_i = img(x,y) and its representation as a sum over 2d gaussians
     !*      defined by f_i = f(x,y) = 
-    !*          f(x,y) = f0 Exp[ - (x-x0,y-y0).D (x-x0,y-y0) ]
+    !*          f(x,y) = bg + f0 safeExp[ - (x-x0,y-y0).D (x-x0,y-y0) ]
     !*      Some pixels will be ignored, marked up with the special code LIB_RSS_IGNORE
-    !*      The ordering of the input data array and output derivatives 
+    !*      The ordering of the input data array and output derivatives per gaussian is
     !*          [ x0,y0,f0,Dxx,Dxy,Dyy ]            
+    !*      computes the background level and returns
             real(kind=real64),dimension(:,:),intent(in)             ::      ellipse     !   (6,nn)
             real(kind=real64),dimension(0:,0:),intent(in)           ::      img_in
             integer,intent(in)                                      ::      mode
@@ -1108,10 +1136,10 @@
             real(kind=real64),intent(in),optional                   ::      mult
                          
             
-            integer             ::      Nx,Ny , nn
-            integer             ::      i0,j0               !   pixel at centre of ellipse
-            integer             ::      ix,iy,ii
-            real(kind=real64)   ::      ss,xx,yy,gg,mult_
+            integer             ::      Nx,Ny , nn,npx
+            !integer             ::      i0,j0               !   pixel at centre of ellipse
+            integer             ::      ix,iy,dx,ii
+            real(kind=real64)   ::      ss,xx,yy,gg,mult_,ff,bg
             real(kind=real64)   ::      Dxx,Dxy,Dyy
             real(kind=real64),dimension(:,:,:),allocatable          ::      img_ell
         
@@ -1123,54 +1151,75 @@
             rss = 0.0d0
             drss = 0.0
 
+
         !---    construct the image that will be added
             select case(mode)
-                case (LIB_DRAWELLIPSE_SHADE_GAUSSIAN)                    
+                case (LIB_DRAWELLIPSE_SHADE_GAUSSIAN)    
+
                     mult_ = LIB_DRAWELLIPSE_GAUSSMULT; if (present(mult)) mult_ = mult
                     allocate(img_ell(0:nn,0:Nx-1,0:Ny-1))
-                    img_ell(0,:,:) = img_in
+
+ 
+                !---    compute difference between image and sum(gaussian)                   
+                    img_ell(0,:,:) = -img_in 
                     img_ell(1:,:,:) = 0
                     do ii = 1,nn
-                        
-                    !---    find the pixel centre of the ellipse
-                        i0 = floor(ellipse(1,ii))
-                        j0 = floor(ellipse(2,ii))
+
                         Dxx = ellipse(4,ii)
                         Dxy = ellipse(5,ii)
                         Dyy = ellipse(6,ii)
-                        ! call findBoundingBox(reshape((/Dxx,Dxy,Dxy,Dyy/),(/2,2/)),dx,mult_)
-                        
-                        ! do iy = max(0,j0-dx),min(Ny-1,j0+dx)
-                        !     yy = iy - ellipse(2,ii)
-                        !     do ix = max(0,i0-dx),min(Nx-1,i0+dx)
+ 
                         do iy = 0,Ny-1
                             yy = iy - ellipse(2,ii)
                             do ix = 0,Nx-1                        
                                 if ( img_in(ix,iy) == LIB_DRAWELLIPSE_IGNORE ) cycle
                                 xx = ix - ellipse(1,ii)
                                 gg = xx*xx*Dxx + 2*xx*yy*Dxy + yy*yy*Dyy
-                                !if ( gg*2 > mult_*mult_ ) cycle
                                 if ( gg < -10.0d0 ) cycle   !   gg should be positive, so this must mean a very bad gaussian
-                                gg = exp( - gg )
-                                img_ell(0,ix,iy) = img_ell(0,ix,iy) - ellipse(3,ii) * gg
+                                gg = safeExp( - gg )
+                                img_ell(0,ix,iy) = img_ell(0,ix,iy) + ellipse(3,ii) * gg 
                                 img_ell(ii,ix,iy) = gg
                             end do
-                        end do                 
+                        end do  
 
                     end do
 
+                !---    find the background level : bg = < img - sum(gaussian) > . 
+                    bg = 0.0d0
+                    if (LIB_DRAWELLIPSE_RSS_REMOVE_BG) then
+                        npx = 0
+                        do iy = 0,Ny-1
+                            do ix = 0,Nx-1                        
+                                if ( img_in(ix,iy) /= LIB_DRAWELLIPSE_IGNORE ) then
+                                    bg = bg + img_ell(0,ix,iy)              
+                                    npx = npx + 1
+                                end if        
+                            end do
+                        end do        
+                        bg = bg/max(1,npx)
+                    end if
+
+                !---    now compute rss and drss
                     do iy = 0,Ny-1
                         do ix = 0,Nx-1
                             if ( img_in(ix,iy) == LIB_DRAWELLIPSE_IGNORE ) cycle
-                            ss = img_ell(0,ix,iy)
+                            ss = img_ell(0,ix,iy) - bg
                             rss = rss + ss*ss
                             do ii = 1,nn
-                                drss(1,ii) = drss(1,ii) + 2*ss*( 2*ellipse(3,ii) *img_ell(ii,ix,iy)*( Dxx*xx + Dxy*yy ) )        !    = d f/d x  
-                                drss(2,ii) = drss(2,ii) + 2*ss*( 2*ellipse(3,ii) *img_ell(ii,ix,iy)*( Dxy*xx + Dyy*yy ) )                    
-                                drss(3,ii) = drss(3,ii) + 2*ss*(                  img_ell(ii,ix,iy)                     )        !    = d f/d f0 
-                                drss(4,ii) = drss(4,ii) + 2*ss*(  -ellipse(3,ii) *img_ell(ii,ix,iy)*xx*xx               )        !    = d f/d Dxx
-                                drss(5,ii) = drss(5,ii) + 2*ss*(-2*ellipse(3,ii) *img_ell(ii,ix,iy)*xx*yy               )                    
-                                drss(6,ii) = drss(6,ii) + 2*ss*(  -ellipse(3,ii) *img_ell(ii,ix,iy)*yy*yy               )
+                                xx = ix - ellipse(1,ii)
+                                yy = iy - ellipse(2,ii)
+                                gg = img_ell(ii,ix,iy)
+                                ff = ellipse(3,ii)                            
+                                Dxx = ellipse(4,ii)
+                                Dxy = ellipse(5,ii)
+                                Dyy = ellipse(6,ii)
+
+                                drss(1,ii) = drss(1,ii) + 2*ss*( 2*ff * gg *( Dxx*xx + Dxy*yy ) )        !    = d f/d x  
+                                drss(2,ii) = drss(2,ii) + 2*ss*( 2*ff * gg *( Dxy*xx + Dyy*yy ) )                    
+                                drss(3,ii) = drss(3,ii) + 2*ss*(        gg                      )        !    = d f/d f0 
+                                drss(4,ii) = drss(4,ii) + 2*ss*(  -ff * gg *xx*xx               )        !    = d f/d Dxx
+                                drss(5,ii) = drss(5,ii) + 2*ss*(-2*ff * gg *xx*yy               )                    
+                                drss(6,ii) = drss(6,ii) + 2*ss*(  -ff * gg *yy*yy               )
                             end do
                         end do
                     end do             
@@ -1270,7 +1319,7 @@
     !---^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     !*      given the input density function, return the t-value
     !*          t = |<f>| / (sigma/sqrt(n))
-    !*          f(x,y) = f0 Exp[ - (x-x0,y-y0).D (x-x0,y-y0) ]    
+    !*          f(x,y) = f0 safeExp[ - (x-x0,y-y0).D (x-x0,y-y0) ]    
     !*      The ordering of the input data array  
     !*          [ x0,y0,f0,Dxx,Dxy,Dyy ]            
 
@@ -1330,7 +1379,7 @@
         real(kind=real64) function getWeight0( ellipse,mode,mult )
     !---^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     !*      given the input density function, return the integral
-    !*          f(x,y) = f0 Exp[ - (x-x0,y-y0).D (x-x0,y-y0) ]    
+    !*          f(x,y) = f0 safeExp[ - (x-x0,y-y0).D (x-x0,y-y0) ]    
     !*      The ordering of the input data array  
     !*          [ x0,y0,f0,Dxx,Dxy,Dyy ]            
 

@@ -184,6 +184,33 @@ set_tests_properties(testF1score
     #ctest will look for "PASS" in the stdout and consider it a pass if it finds it
     PASS_REGULAR_EXPRESSION "PASS")  
 
+add_executable(test_Lib_Gaussian2d test_Lib_Gaussian2d.F90)
+target_link_libraries(test_Lib_Gaussian2d Clock Clock_Utils Clock_Img)
+add_test(NAME test_Lib_Gaussian2d_test COMMAND test_Lib_Gaussian2d -test)
+set_tests_properties(test_Lib_Gaussian2d_test
+    PROPERTIES
+    LABELS "EXAMPLE;SHORT"
+    #ctest will look for "PASS" in the stdout and consider it a pass if it finds it
+    PASS_REGULAR_EXPRESSION "PASS")
+
+add_executable(test_analysespot ${PROJECT_SOURCE_DIR}/src/Count/analyseSpots.f90 test_analyseSpots.F90)
+target_link_libraries(test_analysespot Clock Clock_Utils Clock_Img )
+add_test(NAME analysespot_test COMMAND test_analysespot -test)
+set_tests_properties(analysespot_test
+    PROPERTIES
+    LABELS "EXAMPLE;SHORT"
+    #ctest will look for "PASS" in the stdout and consider it a pass if it finds it
+    PASS_REGULAR_EXPRESSION "PASS") 
+
+add_executable(test_analyse_spot_pair ${PROJECT_SOURCE_DIR}/src/Count/analyseSpots.f90 test_analyse_spot_pair.F90)
+target_link_libraries(test_analyse_spot_pair Clock Clock_Utils Clock_Img )
+add_test(NAME analyse_spot_pair_test COMMAND test_analyse_spot_pair -test)
+set_tests_properties(analyse_spot_pair_test
+    PROPERTIES
+    LABELS "EXAMPLE;SHORT"
+    #ctest will look for "PASS" in the stdout and consider it a pass if it finds it
+    PASS_REGULAR_EXPRESSION "PASS") 
+
 #CLEAN UP NEEDS TO BE LAST
 add_test(NAME clean_up_integration_tests #this calls cleanuptests.cmake that deletes all temporary files associated with testing
     COMMAND ${CMAKE_COMMAND} #this might need to be last

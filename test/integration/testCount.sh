@@ -10,15 +10,15 @@ if [ "$#" -ne 1 ]; then
     echo "usage: testCount.sh [img_files_directory]"
     echo "FAIL"
 else        
-    ../../src/Count/count -quiet -f $1/W_30K_0.2dpa_DF.png | grep "headline result" > countresult
+    ../../src/Count/count -quiet -f $1/W_30K_0.2dpa_DF_crop.png | grep "headline result" > countresult
     nspots=`awk '{print $2}' countresult `
     avgdiam=`awk '{print $3}' countresult`
     # now find the error - either the absolute difference in number of spots, or the first place in decimals of the average diameter
 
-    delta=`awk 'function max(a,b){return a>b?a:b} ; function abs(v) {return v < 0 ? -v : v}{print max( abs($2-2135), int(abs($3-12.648)*10) )}' countresult`
+    delta=`awk 'function max(a,b){return a>b?a:b} ; function abs(v) {return v < 0 ? -v : v}{print max( abs($2-122), int(abs($3-12.352)*10) )}' countresult`
     echo "         NEW RESULT       CACHED RESULT"
-    echo "n spots  " ${nspots}   " 2135 " 
-    echo "<d>      " ${avgdiam}  " 12.648 "
+    echo "n spots  " ${nspots}   " 122 " 
+    echo "<d>      " ${avgdiam}  " 12.352 "
 
     if [ "${delta}" -le 2 ]; then    
         echo "PASS"        

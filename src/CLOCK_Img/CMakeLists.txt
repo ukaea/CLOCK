@@ -14,7 +14,7 @@ include_directories(${PNG_INCLUDE_DIR})
 #Split image processing code into its own lib
 add_library(Clock_Img STATIC
     Lib_RidlerCalvard.F90
-    Lib_MaxLikelihoodFilter.f90 
+    Lib_MaxLikelihoodFilter.F90
     Lib_LocalFilter2d.F90
     Lib_LowPassFilter3d.F90
     Lib_GaussianBlurs.F90
@@ -27,8 +27,8 @@ add_library(Clock_Img STATIC
     Lib_ExtrapolateImage.F90
     Lib_LaplacianKernel.f90
     Lib_Perlin.f90
-
 )
+
 set_target_properties(Clock_Img PROPERTIES 
     Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/include)
 target_include_directories(Clock_Img
